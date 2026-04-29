@@ -97,9 +97,15 @@ export function SignInScreen() {
       </Card>
 
       <Text style={styles.footerText}>
-        New patient?{" "}
+        New to MediMeet?{" "}
         <Link href={ROUTES.signUp} style={styles.link}>
           Create an account
+        </Link>
+      </Text>
+      <Text style={styles.footerText}>
+        Browsing as a guest?{" "}
+        <Link href={ROUTES.doctors} style={styles.link}>
+          View public doctors
         </Link>
       </Text>
     </Screen>

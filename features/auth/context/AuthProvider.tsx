@@ -10,7 +10,10 @@ import {
 import type { Session, User } from "@supabase/supabase-js";
 
 import { signOut as signOutService } from "@/services/auth.service";
-import { getProfile } from "@/services/profile.service";
+import {
+  getOnboardingStatus,
+  getProfile
+} from "@/services/profile.service";
 import type { Profile } from "@/types/profile";
 import { normalizeRole, type UserRole } from "@/types/roles";
 import { isSupabaseConfigured, supabase } from "@/lib/supabase";
@@ -20,6 +23,7 @@ type AuthContextValue = {
   user: User | null;
   profile: Profile | null;
   role: UserRole;
+  isOnboardingComplete: boolean;
   isLoading: boolean;
   refreshProfile: () => Promise<void>;
   signOut: () => Promise<void>;
@@ -34,11 +38,18 @@ type AuthProviderProps = {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isOnboardingComplete, setIsOnboardingComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(isSupabaseConfigured);
 
-  const loadProfile = useCallback(async (userId: string) => {
-    const nextProfile = await getProfile(userId);
+  const loadAccountState = useCallback(async (user: User) => {
+    const nextProfile = await getProfile(user.id);
     setProfile(nextProfile);
+    const nextRole =
+      nextProfile?.role ??
+      normalizeRole(user.user_metadata?.role) ??
+      "patient";
+    const nextOnboardingStatus = await getOnboardingStatus(user.id, nextRole);
+    setIsOnboardingComplete(nextOnboardingStatus);
   }, []);
 
   const applySession = useCallback(
@@ -48,20 +59,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       if (!nextSession?.user) {
         setProfile(null);
+        setIsOnboardingComplete(false);
         setIsLoading(false);
         return;
       }
 
       try {
-        await loadProfile(nextSession.user.id);
+        await loadAccountState(nextSession.user);
       } catch (error) {
-        console.warn("Unable to load profile", error);
+        console.warn("Unable to load account state", error);
         setProfile(null);
+        setIsOnboardingComplete(false);
       } finally {
         setIsLoading(false);
       }
     },
-    [loadProfile]
+    [loadAccountState]
   );
 
   useEffect(() => {
@@ -106,13 +119,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return;
     }
 
-    await loadProfile(session.user.id);
-  }, [loadProfile, session?.user.id]);
+    await loadAccountState(session.user);
+  }, [loadAccountState, session]);
 
   const handleSignOut = useCallback(async () => {
     await signOutService();
     setSession(null);
     setProfile(null);
+    setIsOnboardingComplete(false);
   }, []);
 
   const role = useMemo<UserRole>(() => {
@@ -133,11 +147,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       user: session?.user ?? null,
       profile,
       role,
+      isOnboardingComplete,
       isLoading,
       refreshProfile,
       signOut: handleSignOut
     }),
-    [handleSignOut, isLoading, profile, refreshProfile, role, session]
+    [
+      handleSignOut,
+      isLoading,
+      isOnboardingComplete,
+      profile,
+      refreshProfile,
+      role,
+      session
+    ]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

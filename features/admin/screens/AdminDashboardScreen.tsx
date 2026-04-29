@@ -1,7 +1,9 @@
+import { router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Badge, Button, Card, EmptyState } from "@/components/ui";
+import { ROUTES } from "@/constants/routes";
 import { colors, spacing, typography } from "@/constants/theme";
 import { useAuth } from "@/features/auth";
 
@@ -17,12 +19,22 @@ export function AdminDashboardScreen() {
       </View>
 
       <Card
+        title="Doctor verification"
+        subtitle="Review pending credentials and private verification documents."
+      >
+        <Button
+          title="Open verification queue"
+          onPress={() => router.push(ROUTES.adminVerifications)}
+        />
+      </Card>
+
+      <Card
         title="SaaS administration foundation"
         subtitle="Subscription, tenant, and support operations belong behind this route."
       >
         <EmptyState
-          title="Admin modules pending"
-          message="This feature boundary is ready for platform-level tenant, billing, audit, and support tooling."
+          title="More admin modules pending"
+          message="Billing, audit, reporting, and support tooling will be added behind this route."
         />
       </Card>
 

@@ -8,11 +8,12 @@ import { Screen } from "@/components/Screen";
 import { Button, Card, ErrorState, Input } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
 import { colors, spacing, typography } from "@/constants/theme";
+import { RoleSelection } from "@/features/auth/components/RoleSelection";
 import {
   signUpSchema,
   type SignUpFormValues
 } from "@/features/auth/schemas/auth.schemas";
-import { signUpPatient } from "@/services/auth.service";
+import { signUpWithEmail } from "@/services/auth.service";
 
 export function SignUpScreen() {
   const [formError, setFormError] = useState<string | null>(null);
@@ -26,7 +27,8 @@ export function SignUpScreen() {
     defaultValues: {
       fullName: "",
       email: "",
-      password: ""
+      password: "",
+      role: "patient"
     }
   });
 
@@ -35,9 +37,16 @@ export function SignUpScreen() {
     setSuccessMessage(null);
 
     try {
-      await signUpPatient(values);
-      setSuccessMessage("Account created. Check your email if confirmation is enabled.");
-      router.replace(ROUTES.root);
+      const result = await signUpWithEmail(values);
+
+      if (result.needsEmailConfirmation) {
+        setSuccessMessage(
+          "Account created. Check your email to confirm your account, then sign in."
+        );
+        return;
+      }
+
+      router.replace(ROUTES.onboarding);
     } catch (error) {
       setFormError(
         error instanceof Error
@@ -51,10 +60,10 @@ export function SignUpScreen() {
     <Screen contentStyle={styles.content}>
       <View style={styles.header}>
         <Text style={styles.brand}>MediMeet</Text>
-        <Text style={styles.title}>Create a patient account</Text>
+        <Text style={styles.title}>Create your MediMeet account</Text>
         <Text style={styles.subtitle}>
-          Doctors and clinic admins should be provisioned through an invite or
-          admin workflow later.
+          Choose your role, create credentials, then complete a focused
+          onboarding flow for your workspace.
         </Text>
       </View>
 
@@ -78,6 +87,8 @@ export function SignUpScreen() {
             />
           )}
         />
+
+        <RoleSelection control={control} name="role" />
 
         <Controller
           control={control}

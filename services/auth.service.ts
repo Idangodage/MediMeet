@@ -1,4 +1,5 @@
 import { getSupabase } from "@/lib/supabase";
+import type { AuthenticatedRole } from "@/types/roles";
 
 export type SignInCredentials = {
   email: string;
@@ -7,6 +8,7 @@ export type SignInCredentials = {
 
 export type SignUpCredentials = SignInCredentials & {
   fullName: string;
+  role: Exclude<AuthenticatedRole, "platform_admin">;
 };
 
 export async function signInWithEmail({
@@ -24,19 +26,24 @@ export async function signInWithEmail({
   }
 }
 
-export async function signUpPatient({
+export type SignUpResult = {
+  needsEmailConfirmation: boolean;
+};
+
+export async function signUpWithEmail({
   email,
   password,
-  fullName
-}: SignUpCredentials): Promise<void> {
+  fullName,
+  role
+}: SignUpCredentials): Promise<SignUpResult> {
   const supabase = getSupabase();
-  const { error } = await supabase.auth.signUp({
+  const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
       data: {
         full_name: fullName,
-        role: "patient"
+        role
       }
     }
   });
@@ -44,6 +51,10 @@ export async function signUpPatient({
   if (error) {
     throw error;
   }
+
+  return {
+    needsEmailConfirmation: !data.session
+  };
 }
 
 export async function signOut(): Promise<void> {

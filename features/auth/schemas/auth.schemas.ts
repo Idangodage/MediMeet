@@ -1,5 +1,11 @@
 import { z } from "zod";
 
+export const signUpRoleSchema = z.enum([
+  "patient",
+  "doctor",
+  "clinic_admin"
+]);
+
 export const signInSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
   password: z.string().min(1, "Password is required.")
@@ -10,7 +16,8 @@ export const signUpSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
   password: z
     .string()
-    .min(8, "Use at least 8 characters for your password.")
+    .min(8, "Use at least 8 characters for your password."),
+  role: signUpRoleSchema
 });
 
 export type SignInFormValues = z.infer<typeof signInSchema>;

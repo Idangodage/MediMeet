@@ -12,7 +12,10 @@ export function PatientHomeScreen() {
     <Screen>
       <View style={styles.header}>
         <View style={styles.identity}>
-          <Avatar name={profile?.fullName ?? user?.email} />
+          <Avatar
+            imageUrl={profile?.avatarUrl}
+            name={profile?.fullName ?? user?.email}
+          />
           <View style={styles.identityText}>
             <Text style={styles.eyebrow}>Patient portal</Text>
             <Text style={styles.title}>

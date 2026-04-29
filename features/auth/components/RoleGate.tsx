@@ -8,11 +8,16 @@ import type { AuthenticatedRole } from "@/types/roles";
 
 type RoleGateProps = {
   allowedRoles: AuthenticatedRole[];
+  requireOnboarding?: boolean;
   children: ReactNode;
 };
 
-export function RoleGate({ allowedRoles, children }: RoleGateProps) {
-  const { isLoading, role, session } = useAuth();
+export function RoleGate({
+  allowedRoles,
+  requireOnboarding = true,
+  children
+}: RoleGateProps) {
+  const { isLoading, isOnboardingComplete, role, session } = useAuth();
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -24,6 +29,14 @@ export function RoleGate({ allowedRoles, children }: RoleGateProps) {
 
   if (!allowedRoles.includes(role as AuthenticatedRole)) {
     return <Redirect href={getHomeRouteForRole(role) as Href} />;
+  }
+
+  if (
+    requireOnboarding &&
+    role !== "platform_admin" &&
+    !isOnboardingComplete
+  ) {
+    return <Redirect href={ROUTES.onboarding as Href} />;
   }
 
   return children;
