@@ -10,7 +10,13 @@ export const patientOnboardingSchema = z.object({
   preferredLanguage: requiredText("Preferred language").min(
     2,
     "Enter a language code or language name."
-  )
+  ),
+  dateOfBirth: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.")
+    .or(z.literal(""))
+    .optional()
 });
 
 export const doctorOnboardingSchema = z.object({
@@ -19,6 +25,7 @@ export const doctorOnboardingSchema = z.object({
   registrationNumber: requiredText("Registration number"),
   qualifications: requiredText("Qualifications"),
   specialty: requiredText("Specialty"),
+  subspecialty: z.string().trim().optional(),
   yearsOfExperience: z
     .string()
     .trim()
@@ -28,10 +35,24 @@ export const doctorOnboardingSchema = z.object({
     .string()
     .trim()
     .regex(/^\d+(\.\d{1,2})?$/, "Enter a valid consultation fee."),
+  services: requiredText("Services offered"),
   biography: requiredText("Biography").min(
     40,
     "Write at least 40 characters for your biography."
   ),
+  visitingLocationName: requiredText("Visiting location"),
+  visitingAddress: requiredText("Visiting address"),
+  visitingCity: requiredText("Visiting city"),
+  firstAvailableDate: z
+    .string()
+    .trim()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD."),
+  startTime: z.string().trim().regex(/^\d{2}:\d{2}$/, "Use HH:MM."),
+  endTime: z.string().trim().regex(/^\d{2}:\d{2}$/, "Use HH:MM."),
+  appointmentDurationMinutes: z
+    .string()
+    .trim()
+    .regex(/^\d+$/, "Enter duration in minutes."),
   profilePhotoUri: z.string().nullable().optional()
 });
 
@@ -39,6 +60,9 @@ export const clinicAdminOnboardingSchema = z.object({
   clinicName: requiredText("Clinic name"),
   clinicEmail: z.string().trim().email("Enter a valid clinic email."),
   clinicPhone: requiredText("Clinic phone").min(7, "Enter a valid phone number."),
+  website: z.string().trim().url("Enter a valid website URL.").or(z.literal("")).optional(),
+  clinicAddress: requiredText("Clinic address"),
+  city: requiredText("City"),
   clinicLocation: requiredText("Clinic location")
 });
 

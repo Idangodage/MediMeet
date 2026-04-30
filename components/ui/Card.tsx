@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View, type ViewProps } from "react-native";
 
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 
 type CardProps = ViewProps & {
   title?: string;
@@ -31,8 +31,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.surface,
-    padding: spacing.lg
+    backgroundColor: colors.surfaceElevated,
+    padding: spacing.lg,
+    ...shadows.card
   },
   header: {
     gap: spacing.xs
@@ -40,12 +41,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: typography.subtitle,
-    fontWeight: "800"
+    fontWeight: "900",
+    letterSpacing: -0.2
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: typography.small,
-    lineHeight: 19
+    fontWeight: "600",
+    lineHeight: 20
   },
   footer: {
     borderTopWidth: 1,

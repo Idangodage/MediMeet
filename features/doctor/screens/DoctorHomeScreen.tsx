@@ -8,25 +8,40 @@ import {
   Badge,
   Button,
   Card,
-  EmptyState,
   ErrorState,
   LoadingState
 } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
 import { colors, radius, spacing, typography } from "@/constants/theme";
 import { useAuth } from "@/features/auth";
+import { NotificationSummaryCard } from "@/features/notifications";
+import { SubscriptionPlanCard } from "@/features/subscriptions";
 import {
   calculateDoctorProfileCompletion,
   formatDoctorProfileStatus,
   getOwnDoctorProfile,
   type DoctorProfileStatus
 } from "@/services/doctor.service";
+import { getDoctorAppointmentDashboardData } from "@/services/doctorAppointments.service";
+import {
+  formatRating,
+  listOwnDoctorReviews,
+  type DoctorReview
+} from "@/services/review.service";
 
 export function DoctorHomeScreen() {
   const { profile, signOut, user } = useAuth();
   const doctorProfileQuery = useQuery({
     queryKey: ["own-doctor-profile"],
     queryFn: getOwnDoctorProfile
+  });
+  const appointmentDashboardQuery = useQuery({
+    queryKey: ["doctor-home-dashboard"],
+    queryFn: getDoctorAppointmentDashboardData
+  });
+  const reviewsQuery = useQuery({
+    queryKey: ["own-doctor-reviews"],
+    queryFn: listOwnDoctorReviews
   });
   const completion = calculateDoctorProfileCompletion(doctorProfileQuery.data ?? null);
 
@@ -43,9 +58,12 @@ export function DoctorHomeScreen() {
             <Text style={styles.title}>
               {profile?.fullName ?? user?.email ?? "Doctor"}
             </Text>
+            <Text style={styles.subtitle}>
+              Manage profile readiness, appointments, patients, and practice growth.
+            </Text>
           </View>
         </View>
-        <Badge label="Doctor" />
+        <Badge label="Doctor" variant="primary" />
       </View>
 
       {doctorProfileQuery.isLoading ? (
@@ -83,6 +101,15 @@ export function DoctorHomeScreen() {
               </Text>
             </View>
           ) : null}
+          {completion.status === "pending_verification" ? (
+            <View style={styles.infoBox}>
+              <Badge label="Under verification" variant="info" />
+              <Text style={styles.bodyText}>
+                Your profile is under verification. You can prepare your
+                calendar while waiting.
+              </Text>
+            </View>
+          ) : null}
           <View style={styles.actionRow}>
             <Button
               title="Manage profile"
@@ -98,19 +125,139 @@ export function DoctorHomeScreen() {
               variant="secondary"
               onPress={() => router.push(ROUTES.doctorVerification)}
             />
+            <Button
+              title="Availability calendar"
+              variant="secondary"
+              onPress={() => router.push(ROUTES.doctorAvailability)}
+            />
+            <Button
+              title="Billing"
+              variant="secondary"
+              onPress={() => router.push(ROUTES.doctorBilling)}
+            />
           </View>
         </Card>
       )}
 
-      <Card title="Practice operations" subtitle="Clinical schedule tools will live here.">
-        <EmptyState
-          title="Doctor tools pending"
-          message="The doctor feature boundary is ready for availability, appointment, and patient workflow modules."
-        />
+      <SubscriptionPlanCard scope="doctor" />
+
+      <NotificationSummaryCard
+        title="Recent notifications"
+        subtitle="New patient bookings, verification updates, and billing notices appear here."
+      />
+
+      <Card
+        title="Patient reviews"
+        subtitle="Read-only feedback from completed appointments."
+      >
+        {reviewsQuery.isLoading ? (
+          <LoadingState message="Loading reviews..." />
+        ) : null}
+        {reviewsQuery.isError ? (
+          <ErrorState
+            message={
+              reviewsQuery.error instanceof Error
+                ? reviewsQuery.error.message
+                : "Unable to load reviews."
+            }
+            onRetry={() => void reviewsQuery.refetch()}
+          />
+        ) : null}
+        {reviewsQuery.data?.length ? (
+          reviewsQuery.data.slice(0, 4).map((review) => (
+            <DoctorReviewCard key={review.id} review={review} />
+          ))
+        ) : !reviewsQuery.isLoading && !reviewsQuery.isError ? (
+          <Text style={styles.bodyText}>No reviews yet.</Text>
+        ) : null}
+      </Card>
+
+      <Card
+        title="Appointment operations"
+        subtitle="Manage today's work, pending requests, outcomes, and treated patients."
+      >
+        {appointmentDashboardQuery.isLoading ? (
+          <LoadingState message="Loading appointment summary..." />
+        ) : null}
+
+        {appointmentDashboardQuery.isError ? (
+          <ErrorState
+            message={
+              appointmentDashboardQuery.error instanceof Error
+                ? appointmentDashboardQuery.error.message
+                : "Unable to load appointment summary."
+            }
+            onRetry={() => void appointmentDashboardQuery.refetch()}
+          />
+        ) : null}
+
+        {appointmentDashboardQuery.data ? (
+          <>
+            <View style={styles.statsRow}>
+              <SummaryStat
+                label="Today"
+                value={String(appointmentDashboardQuery.data.today.length)}
+              />
+              <SummaryStat
+                label="Upcoming"
+                value={String(appointmentDashboardQuery.data.upcoming.length)}
+              />
+              <SummaryStat
+                label="Requested"
+                value={String(appointmentDashboardQuery.data.requested.length)}
+              />
+            </View>
+            <View style={styles.statsRow}>
+              <SummaryStat
+                label="Completed"
+                value={String(appointmentDashboardQuery.data.completed.length)}
+              />
+              <SummaryStat
+                label="Cancelled"
+                value={String(appointmentDashboardQuery.data.cancelled.length)}
+              />
+              <SummaryStat
+                label="No-show"
+                value={String(appointmentDashboardQuery.data.noShow.length)}
+              />
+            </View>
+            <View style={styles.actionRow}>
+              <Button
+                title="Open appointment dashboard"
+                onPress={() => router.push(ROUTES.doctorAppointments)}
+              />
+              <Button
+                title="Treated patients"
+                variant="secondary"
+                onPress={() => router.push(ROUTES.doctorPatients)}
+              />
+            </View>
+          </>
+        ) : null}
       </Card>
 
       <Button title="Sign out" variant="ghost" onPress={signOut} />
     </Screen>
+  );
+}
+
+function DoctorReviewCard({ review }: { review: DoctorReview }) {
+  return (
+    <View style={styles.reviewCard}>
+      <View style={styles.reviewHeader}>
+        <Badge label={formatRating(review.rating)} variant="success" />
+        <Badge
+          label={review.isPublic ? "Public" : "Private/hidden"}
+          variant={review.isPublic ? "success" : "neutral"}
+        />
+      </View>
+      <Text style={styles.bodyText}>
+        {review.comment || "No written comment."}
+      </Text>
+      <Text style={styles.reviewMeta}>
+        {review.patientName ?? "Patient"} - {formatDate(review.createdAt)}
+      </Text>
+    </View>
   );
 }
 
@@ -119,7 +266,7 @@ function getStatusBadgeVariant(status: DoctorProfileStatus) {
     return "success";
   }
 
-  if (status === "rejected") {
+  if (status === "rejected" || status === "suspended") {
     return "danger";
   }
 
@@ -130,9 +277,29 @@ function getStatusBadgeVariant(status: DoctorProfileStatus) {
   return "neutral";
 }
 
+function SummaryStat({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.summaryStat}>
+      <Text style={styles.summaryValue}>{value}</Text>
+      <Text style={styles.summaryLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: "medium"
+  }).format(new Date(value));
+}
+
 const styles = StyleSheet.create({
   header: {
-    gap: spacing.lg
+    gap: spacing.lg,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint,
+    padding: spacing.xl
   },
   identity: {
     alignItems: "center",
@@ -151,7 +318,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: typography.title,
-    fontWeight: "900"
+    fontWeight: "900",
+    letterSpacing: -0.5
+  },
+  subtitle: {
+    color: colors.textMuted,
+    fontSize: typography.body,
+    lineHeight: 23,
+    marginTop: spacing.xs
   },
   profileStatusHeader: {
     alignItems: "center",
@@ -177,7 +351,17 @@ const styles = StyleSheet.create({
   warningBox: {
     gap: spacing.sm,
     borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.warningSoft,
     backgroundColor: colors.warningSoft,
+    padding: spacing.md
+  },
+  infoBox: {
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.infoSoft,
+    backgroundColor: colors.infoSoft,
     padding: spacing.md
   },
   bodyText: {
@@ -187,5 +371,46 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     gap: spacing.sm
-  }
+  },
+  reviewCard: {
+    gap: spacing.sm,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint,
+    padding: spacing.md
+  },
+  reviewHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  reviewMeta: {
+    color: colors.textMuted,
+    fontSize: typography.small,
+    fontWeight: "800"
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: spacing.md
+  },
+  summaryStat: {
+    flex: 1,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint,
+    padding: spacing.md
+  },
+  summaryValue: {
+    color: colors.text,
+    fontSize: typography.title,
+    fontWeight: "900"
+  },
+  summaryLabel: {
+    color: colors.textMuted,
+    fontSize: typography.small,
+    fontWeight: "800"
+  },
 });

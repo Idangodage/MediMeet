@@ -1,17 +1,20 @@
 import { getSupabase } from "@/lib/supabase";
+import { assertCanSaveDoctorLocation } from "@/services/subscription.service";
 
 export type ConsultationType = "in_person" | "video" | "phone";
 export type VerificationStatus =
   | "pending"
   | "approved"
   | "rejected"
-  | "needs_review";
+  | "needs_review"
+  | "suspended";
 export type DoctorProfileStatus =
   | "incomplete"
   | "pending_verification"
   | "verified"
   | "rejected"
-  | "needs_update";
+  | "needs_update"
+  | "suspended";
 
 export type DoctorSearchFilters = {
   specialty?: string;
@@ -200,6 +203,17 @@ export async function bookPublicAppointment({
   return data;
 }
 
+export async function recordDoctorProfileView(doctorId: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.rpc("record_doctor_profile_view", {
+    target_doctor_id: doctorId
+  });
+
+  if (error) {
+    throw error;
+  }
+}
+
 export async function getOwnDoctorProfile(): Promise<ManagedDoctorProfile | null> {
   const supabase = getSupabase();
   const {
@@ -310,6 +324,12 @@ export async function updateOwnDoctorProfile(
 export async function upsertDoctorLocation(
   values: DoctorLocationInput
 ): Promise<void> {
+  await assertCanSaveDoctorLocation({
+    doctorId: values.doctorId,
+    isActive: values.isActive,
+    locationId: values.id
+  });
+
   const supabase = getSupabase();
   const payload = {
     doctor_id: values.doctorId,
@@ -663,6 +683,10 @@ export function getDoctorProfileStatus(
 
   if (profile.verificationStatus === "rejected") {
     return "rejected";
+  }
+
+  if (profile.verificationStatus === "suspended") {
+    return "suspended";
   }
 
   if (profile.verificationStatus === "needs_review") {

@@ -489,7 +489,7 @@ function getStatusBadgeVariant(status: DoctorProfileStatus) {
     return "success";
   }
 
-  if (status === "rejected") {
+  if (status === "rejected" || status === "suspended") {
     return "danger";
   }
 

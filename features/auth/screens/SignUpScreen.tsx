@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, router } from "expo-router";
+import { Link, router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
-import { Button, Card, ErrorState, Input } from "@/components/ui";
+import { Badge, Button, Card, ErrorState, Input } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
 import { colors, spacing, typography } from "@/constants/theme";
 import { RoleSelection } from "@/features/auth/components/RoleSelection";
@@ -14,10 +14,12 @@ import {
   type SignUpFormValues
 } from "@/features/auth/schemas/auth.schemas";
 import { signUpWithEmail } from "@/services/auth.service";
+import { normalizeRole } from "@/types/roles";
 
 export function SignUpScreen() {
+  const { role: roleParam } = useLocalSearchParams<{ role?: string }>();
+  const initialRole = normalizeRole(roleParam) ?? "patient";
   const [formError, setFormError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const {
     control,
     handleSubmit,
@@ -27,22 +29,25 @@ export function SignUpScreen() {
     defaultValues: {
       fullName: "",
       email: "",
+      phone: "",
       password: "",
-      role: "patient"
+      confirmPassword: "",
+      role: initialRole === "platform_admin" ? "patient" : initialRole,
+      acceptedTerms: false
     }
   });
 
   const onSubmit = handleSubmit(async (values) => {
     setFormError(null);
-    setSuccessMessage(null);
 
     try {
       const result = await signUpWithEmail(values);
 
       if (result.needsEmailConfirmation) {
-        setSuccessMessage(
-          "Account created. Check your email to confirm your account, then sign in."
-        );
+        router.replace({
+          pathname: ROUTES.emailVerification,
+          params: { email: values.email }
+        });
         return;
       }
 
@@ -69,7 +74,7 @@ export function SignUpScreen() {
 
       <Card>
         {formError ? <ErrorState message={formError} /> : null}
-        {successMessage ? <Text style={styles.success}>{successMessage}</Text> : null}
+        <Badge label="Secure signup" variant="primary" />
 
         <Controller
           control={control}
@@ -89,6 +94,24 @@ export function SignUpScreen() {
         />
 
         <RoleSelection control={control} name="role" />
+
+        <Controller
+          control={control}
+          name="phone"
+          render={({ field: { onBlur, onChange, value } }) => (
+            <Input
+              autoComplete="tel"
+              error={errors.phone?.message}
+              keyboardType="phone-pad"
+              label="Phone optional"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="+358 40 000 0000"
+              textContentType="telephoneNumber"
+              value={value ?? ""}
+            />
+          )}
+        />
 
         <Controller
           control={control}
@@ -128,6 +151,52 @@ export function SignUpScreen() {
           )}
         />
 
+        <Controller
+          control={control}
+          name="confirmPassword"
+          render={({ field: { onBlur, onChange, value } }) => (
+            <Input
+              autoCapitalize="none"
+              error={errors.confirmPassword?.message}
+              label="Confirm password"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="Repeat your password"
+              secureTextEntry
+              textContentType="newPassword"
+              value={value}
+            />
+          )}
+        />
+
+        <Controller
+          control={control}
+          name="acceptedTerms"
+          render={({ field: { onChange, value } }) => (
+            <View style={styles.agreementBox}>
+              <Button
+                title={value ? "Terms accepted" : "Accept terms and privacy"}
+                variant={value ? "secondary" : "ghost"}
+                onPress={() => onChange(!value)}
+              />
+              <Text style={styles.agreementText}>
+                I agree to the{" "}
+                <Link href={ROUTES.terms} style={styles.link}>
+                  Terms
+                </Link>{" "}
+                and{" "}
+                <Link href={ROUTES.privacy} style={styles.link}>
+                  Privacy Policy
+                </Link>
+                .
+              </Text>
+              {errors.acceptedTerms?.message ? (
+                <Text style={styles.errorText}>{errors.acceptedTerms.message}</Text>
+              ) : null}
+            </View>
+          )}
+        />
+
         <Button title="Create account" isLoading={isSubmitting} onPress={onSubmit} />
       </Card>
 
@@ -164,11 +233,6 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     lineHeight: 24
   },
-  success: {
-    color: colors.success,
-    fontSize: typography.body,
-    fontWeight: "700"
-  },
   footerText: {
     color: colors.textMuted,
     fontSize: typography.body,
@@ -176,6 +240,24 @@ const styles = StyleSheet.create({
   },
   link: {
     color: colors.primaryDark,
+    fontWeight: "800"
+  },
+  agreementBox: {
+    gap: spacing.sm,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint,
+    padding: spacing.md
+  },
+  agreementText: {
+    color: colors.textMuted,
+    fontSize: typography.small,
+    lineHeight: 19
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: typography.small,
     fontWeight: "800"
   }
 });

@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
-import { colors, spacing, typography } from "@/constants/theme";
+import { colors, radius, spacing, typography } from "@/constants/theme";
 import { Button } from "@/components/ui/Button";
 
 type ErrorStateProps = {
@@ -30,7 +30,9 @@ export function ErrorState({
 const styles = StyleSheet.create({
   container: {
     gap: spacing.md,
-    borderRadius: 18,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.dangerSoft,
     backgroundColor: colors.dangerSoft,
     padding: spacing.xl
   },

@@ -1,6 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
-import { colors, spacing, typography } from "@/constants/theme";
+import { colors, radius, spacing, typography } from "@/constants/theme";
 
 type LoadingStateProps = {
   message?: string;
@@ -20,6 +20,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
     padding: spacing.xl
   },
   message: {

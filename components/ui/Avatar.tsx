@@ -1,6 +1,6 @@
 import { Image, StyleSheet, Text, View } from "react-native";
 
-import { colors } from "@/constants/theme";
+import { colors, shadows } from "@/constants/theme";
 
 type AvatarProps = {
   name?: string | null;
@@ -48,7 +48,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: colors.primarySoft,
     borderWidth: 1,
-    borderColor: colors.border
+    borderColor: colors.white,
+    ...shadows.soft
   },
   initials: {
     color: colors.primaryDark,

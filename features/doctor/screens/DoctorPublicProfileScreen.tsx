@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import { Alert, StyleSheet, Text, View } from "react-native";
 
@@ -17,41 +17,34 @@ import { ROUTES } from "@/constants/routes";
 import { colors, spacing, typography } from "@/constants/theme";
 import { useAuth } from "@/features/auth";
 import {
-  bookPublicAppointment,
   formatConsultationType,
   getPublicDoctorById,
+  recordDoctorProfileView,
   type PublicDoctor
 } from "@/services/doctor.service";
 
 export function DoctorPublicProfileScreen() {
   const { doctorId } = useLocalSearchParams<{ doctorId?: string }>();
   const { role } = useAuth();
-  const queryClient = useQueryClient();
   const doctorQuery = useQuery({
     enabled: Boolean(doctorId),
     queryKey: ["public-doctor", doctorId],
     queryFn: () => getPublicDoctorById(doctorId ?? "")
   });
-  const firstAvailableSlot = doctorQuery.data?.availableSlots[0];
-  const bookingMutation = useMutation({
-    mutationFn: () =>
-      bookPublicAppointment({
-        slotId: firstAvailableSlot?.id ?? "",
-        reasonForVisit: "Booked from public doctor profile"
-      }),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["public-doctors"] });
-      await queryClient.invalidateQueries({ queryKey: ["public-doctor", doctorId] });
-      Alert.alert("Appointment booked", "Your appointment has been confirmed.");
-      router.replace(ROUTES.patientHome);
-    },
-    onError: (error) => {
-      Alert.alert(
-        "Unable to book",
-        error instanceof Error ? error.message : "Please try another slot."
-      );
+  const recordedDoctorIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    const loadedDoctorId = doctorQuery.data?.id;
+
+    if (!loadedDoctorId || recordedDoctorIdRef.current === loadedDoctorId) {
+      return;
     }
-  });
+
+    recordedDoctorIdRef.current = loadedDoctorId;
+    void recordDoctorProfileView(loadedDoctorId).catch(() => {
+      recordedDoctorIdRef.current = null;
+    });
+  }, [doctorQuery.data?.id]);
 
   if (!doctorId) {
     return (
@@ -114,6 +107,10 @@ export function DoctorPublicProfileScreen() {
             <Text style={styles.meta}>
               {doctor.specialties.join(", ") || "General practice"}
             </Text>
+            <View style={styles.trustRow}>
+              <Badge label="Verified credentials" variant="success" />
+              <Badge label="Private booking records" variant="primary" />
+            </View>
           </View>
         </View>
 
@@ -125,7 +122,6 @@ export function DoctorPublicProfileScreen() {
 
         <BookingAction
           doctor={doctor}
-          isBooking={bookingMutation.isPending}
           onBook={() => {
             if (role === "guest") {
               router.push({
@@ -143,12 +139,15 @@ export function DoctorPublicProfileScreen() {
               return;
             }
 
-            if (!firstAvailableSlot) {
+            if (doctor.availableSlots.length === 0) {
               Alert.alert("No availability", "This doctor has no open slots.");
               return;
             }
 
-            bookingMutation.mutate();
+            router.push({
+              pathname: "/book-doctor/[doctorId]",
+              params: { doctorId: doctor.id }
+            });
           }}
         />
       </Card>
@@ -227,11 +226,9 @@ export function DoctorPublicProfileScreen() {
 
 function BookingAction({
   doctor,
-  isBooking,
   onBook
 }: {
   doctor: PublicDoctor;
-  isBooking: boolean;
   onBook: () => void;
 }) {
   const nextSlot = doctor.availableSlots[0];
@@ -245,11 +242,14 @@ function BookingAction({
             ? `Next available: ${formatDate(nextSlot.startTime)}`
             : "No available appointment slots."}
         </Text>
+        <View style={styles.trustRow}>
+          <Badge label="Automatic confirmation" variant="info" />
+          <Badge label="Pay at clinic" variant="neutral" />
+        </View>
       </View>
       <Button
-        disabled={!nextSlot || isBooking}
-        isLoading={isBooking}
-        title={nextSlot ? "Book appointment" : "No slots"}
+        disabled={!nextSlot}
+        title={nextSlot ? "Choose appointment" : "No slots"}
         onPress={onBook}
       />
     </View>
@@ -316,7 +316,8 @@ function formatDate(value: string): string {
 
 const styles = StyleSheet.create({
   profileHero: {
-    backgroundColor: colors.primarySoft
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint
   },
   heroHeader: {
     flexDirection: "row",
@@ -330,6 +331,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 30,
     fontWeight: "900",
+    letterSpacing: -0.6,
     lineHeight: 36
   },
   meta: {
@@ -340,6 +342,11 @@ const styles = StyleSheet.create({
   heroStats: {
     flexDirection: "row",
     gap: spacing.md
+  },
+  trustRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
   },
   stat: {
     flex: 1,
@@ -359,7 +366,9 @@ const styles = StyleSheet.create({
   },
   bookingBox: {
     gap: spacing.md,
-    borderRadius: 18,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: colors.border,
     backgroundColor: colors.surface,
     padding: spacing.lg
   },

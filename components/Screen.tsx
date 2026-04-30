@@ -30,6 +30,7 @@ export function Screen({ children, scroll = true, contentStyle }: ScreenProps) {
       <ScrollView
         contentContainerStyle={[styles.content, contentStyle]}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         {children}
       </ScrollView>
@@ -45,6 +46,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     gap: spacing.xl,
-    padding: spacing.xl
+    padding: spacing.xl,
+    paddingBottom: spacing["3xl"]
   }
 });

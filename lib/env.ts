@@ -6,6 +6,11 @@ const extra = (Constants.expoConfig?.extra ?? {}) as Record<
 >;
 
 export const env = {
+  appEnv:
+    process.env.EXPO_PUBLIC_APP_ENV ??
+    extra.EXPO_PUBLIC_APP_ENV ??
+    extra.appEnv ??
+    "development",
   supabaseUrl:
     process.env.EXPO_PUBLIC_SUPABASE_URL ??
     extra.EXPO_PUBLIC_SUPABASE_URL ??

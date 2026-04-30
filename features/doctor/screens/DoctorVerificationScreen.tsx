@@ -248,7 +248,7 @@ function getStatusBadgeVariant(status: VerificationStatus) {
     return "success";
   }
 
-  if (status === "rejected") {
+  if (status === "rejected" || status === "suspended") {
     return "danger";
   }
 

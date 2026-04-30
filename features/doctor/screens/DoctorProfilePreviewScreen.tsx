@@ -78,7 +78,7 @@ function DoctorProfilePreview({ profile }: { profile: ManagedDoctorProfile }) {
         <Text style={styles.title}>How patients will read your profile</Text>
         <Text style={styles.subtitle}>
           This preview is visible to you even when the profile is incomplete,
-          pending verification, rejected, or needs update.
+          pending verification, rejected, suspended, or needs update.
         </Text>
       </View>
 
@@ -243,7 +243,7 @@ function getStatusBadgeVariant(status: DoctorProfileStatus) {
     return "success";
   }
 
-  if (status === "rejected") {
+  if (status === "rejected" || status === "suspended") {
     return "danger";
   }
 

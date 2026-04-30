@@ -7,7 +7,10 @@ export type SignInCredentials = {
 };
 
 export type SignUpCredentials = SignInCredentials & {
+  confirmPassword?: string;
+  acceptedTerms?: boolean;
   fullName: string;
+  phone?: string;
   role: Exclude<AuthenticatedRole, "platform_admin">;
 };
 
@@ -34,6 +37,7 @@ export async function signUpWithEmail({
   email,
   password,
   fullName,
+  phone,
   role
 }: SignUpCredentials): Promise<SignUpResult> {
   const supabase = getSupabase();
@@ -43,6 +47,7 @@ export async function signUpWithEmail({
     options: {
       data: {
         full_name: fullName,
+        phone: phone?.trim() || undefined,
         role
       }
     }
@@ -55,6 +60,15 @@ export async function signUpWithEmail({
   return {
     needsEmailConfirmation: !data.session
   };
+}
+
+export async function sendPasswordResetEmail(email: string): Promise<void> {
+  const supabase = getSupabase();
+  const { error } = await supabase.auth.resetPasswordForEmail(email);
+
+  if (error) {
+    throw error;
+  }
 }
 
 export async function signOut(): Promise<void> {

@@ -11,6 +11,10 @@ export function LoginPromptScreen() {
   const { doctorId } = useLocalSearchParams<{ doctorId?: string }>();
   const { role, session } = useAuth();
 
+  if (session && role === "patient" && doctorId) {
+    return <Redirect href={`/book-doctor/${doctorId}` as Href} />;
+  }
+
   if (session) {
     return <Redirect href={getHomeRouteForRole(role) as Href} />;
   }
@@ -26,13 +30,19 @@ export function LoginPromptScreen() {
             reviews. Booking requires a patient account so we can protect
             appointment and health-related data.
           </Text>
+          <View style={styles.disclaimerBox}>
+            <Text style={styles.disclaimerText}>
+              This platform is for doctor discovery and appointment booking
+              only. It is not for emergency medical care.
+            </Text>
+          </View>
         </View>
 
         <View style={styles.actions}>
           <Link href={ROUTES.signIn} asChild>
             <Button title="Sign in" />
           </Link>
-          <Link href={ROUTES.signUp} asChild>
+          <Link href={`${ROUTES.signUp}?role=patient`} asChild>
             <Button title="Create patient account" variant="secondary" />
           </Link>
           <Link
@@ -41,6 +51,14 @@ export function LoginPromptScreen() {
           >
             <Button title="Back to doctor profile" variant="ghost" />
           </Link>
+          <View style={styles.legalLinks}>
+            <Link href={ROUTES.privacy} asChild>
+              <Button title="Privacy" variant="ghost" />
+            </Link>
+            <Link href={ROUTES.terms} asChild>
+              <Button title="Terms" variant="ghost" />
+            </Link>
+          </View>
         </View>
       </Card>
     </Screen>
@@ -65,7 +83,25 @@ const styles = StyleSheet.create({
     fontSize: typography.body,
     lineHeight: 24
   },
+  disclaimerBox: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.warningSoft,
+    backgroundColor: colors.warningSoft,
+    padding: spacing.md
+  },
+  disclaimerText: {
+    color: colors.warning,
+    fontSize: typography.small,
+    fontWeight: "800",
+    lineHeight: 19
+  },
   actions: {
     gap: spacing.md
+  },
+  legalLinks: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
   }
 });

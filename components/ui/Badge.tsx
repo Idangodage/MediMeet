@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { colors, radius, spacing, typography } from "@/constants/theme";
 
-type BadgeVariant = "neutral" | "success" | "warning" | "danger";
+type BadgeVariant = "neutral" | "primary" | "info" | "success" | "warning" | "danger";
 
 type BadgeProps = {
   label: string;
@@ -21,27 +21,47 @@ const styles = StyleSheet.create({
   base: {
     alignSelf: "flex-start",
     borderRadius: radius.full,
+    borderWidth: 1,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs
   },
   neutral: {
-    backgroundColor: colors.surfaceMuted
+    backgroundColor: colors.surfaceMuted,
+    borderColor: colors.border
+  },
+  primary: {
+    backgroundColor: colors.primarySoft,
+    borderColor: colors.primarySoft
+  },
+  info: {
+    backgroundColor: colors.infoSoft,
+    borderColor: colors.infoSoft
   },
   success: {
-    backgroundColor: colors.successSoft
+    backgroundColor: colors.successSoft,
+    borderColor: colors.successSoft
   },
   warning: {
-    backgroundColor: colors.warningSoft
+    backgroundColor: colors.warningSoft,
+    borderColor: colors.warningSoft
   },
   danger: {
-    backgroundColor: colors.dangerSoft
+    backgroundColor: colors.dangerSoft,
+    borderColor: colors.dangerSoft
   },
   text: {
     fontSize: typography.small,
-    fontWeight: "800"
+    fontWeight: "900",
+    letterSpacing: 0.1
   },
   neutralText: {
-    color: colors.textMuted
+    color: colors.accent
+  },
+  primaryText: {
+    color: colors.primaryDark
+  },
+  infoText: {
+    color: colors.info
   },
   successText: {
     color: colors.success

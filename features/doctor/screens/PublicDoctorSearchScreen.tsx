@@ -104,12 +104,16 @@ export function PublicDoctorSearchScreen() {
   return (
     <Screen>
       <View style={styles.hero}>
-        <Badge label="Doctor discovery" variant="success" />
+        <Badge label="Verified doctor directory" variant="primary" />
         <Text style={styles.title}>Search verified doctors</Text>
         <Text style={styles.subtitle}>
           Filter by specialty, city, language, date, fee, verification, and
           consultation type.
         </Text>
+        <View style={styles.trustRow}>
+          <Badge label="Public verified profiles only" variant="success" />
+          <Badge label="No booking without patient login" variant="info" />
+        </View>
         <View style={styles.actions}>
           <Link href={ROUTES.guestHome} asChild>
             <Button title="Guest home" variant="secondary" />
@@ -120,7 +124,10 @@ export function PublicDoctorSearchScreen() {
         </View>
       </View>
 
-      <Card title="Search filters" subtitle={`${activeFilterCount} active filters`}>
+      <Card
+        title="Search filters"
+        subtitle={`${activeFilterCount} active filters. Refine results without exposing patient data.`}
+      >
         <View style={styles.filterGrid}>
           <SearchInput control={control} label="Specialty" name="specialty" placeholder="Cardiology" />
           <SearchInput control={control} label="City / location" name="city" placeholder="Helsinki" />
@@ -168,6 +175,13 @@ export function PublicDoctorSearchScreen() {
         </Card>
       ) : null}
 
+      {doctorsQuery.data?.length ? (
+        <View style={styles.resultHeader}>
+          <Text style={styles.resultTitle}>Available doctors</Text>
+          <Badge label={`${doctorsQuery.data.length} result${doctorsQuery.data.length === 1 ? "" : "s"}`} />
+        </View>
+      ) : null}
+
       {doctorsQuery.data?.map((doctor) => (
         <DoctorDiscoveryCard doctor={doctor} key={doctor.id} />
       ))}
@@ -195,7 +209,7 @@ function DoctorDiscoveryCard({ doctor }: { doctor: PublicDoctor }) {
             {doctor.specialties[0] ?? "General practice"}
           </Text>
         </View>
-        <Badge label="Verified" variant="success" />
+        <Badge label="Verified doctor" variant="success" />
       </View>
 
       <View style={styles.infoGrid}>
@@ -223,6 +237,11 @@ function DoctorDiscoveryCard({ doctor }: { doctor: PublicDoctor }) {
       <Text style={styles.bio} numberOfLines={3}>
         {doctor.biography ?? "No biography provided yet."}
       </Text>
+
+      <View style={styles.cardTrustRow}>
+        <Badge label="Public profile reviewed" variant="primary" />
+        <Badge label="Pay at clinic" variant="neutral" />
+      </View>
 
       <Link href={`/doctors/${doctor.id}` as Href} asChild>
         <Button title="View profile" />
@@ -323,14 +342,17 @@ function formatDate(value: string): string {
 const styles = StyleSheet.create({
   hero: {
     gap: spacing.md,
-    borderRadius: 28,
-    backgroundColor: colors.primarySoft,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint,
     padding: spacing.xl
   },
   title: {
     color: colors.text,
     fontSize: 32,
     fontWeight: "900",
+    letterSpacing: -0.7,
     lineHeight: 38
   },
   subtitle: {
@@ -345,6 +367,22 @@ const styles = StyleSheet.create({
   },
   filterGrid: {
     gap: spacing.md
+  },
+  trustRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  resultHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: spacing.md
+  },
+  resultTitle: {
+    color: colors.text,
+    fontSize: typography.subtitle,
+    fontWeight: "900"
   },
   doctorCard: {
     gap: spacing.md
@@ -367,6 +405,11 @@ const styles = StyleSheet.create({
     color: colors.primaryDark,
     fontSize: typography.body,
     fontWeight: "800"
+  },
+  cardTrustRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
   },
   infoGrid: {
     flexDirection: "row",

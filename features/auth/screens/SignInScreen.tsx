@@ -94,6 +94,9 @@ export function SignInScreen() {
         />
 
         <Button title="Sign in" isLoading={isSubmitting} onPress={onSubmit} />
+        <Link href={ROUTES.forgotPassword} asChild>
+          <Button title="Forgot password?" variant="ghost" />
+        </Link>
       </Card>
 
       <Text style={styles.footerText}>

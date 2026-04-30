@@ -9,7 +9,7 @@ import {
   type ViewStyle
 } from "react-native";
 
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -35,6 +35,7 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: isDisabled, busy: isLoading }}
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.base,
@@ -46,7 +47,9 @@ export function Button({
       {...pressableProps}
     >
       {isLoading ? (
-        <ActivityIndicator color={variant === "primary" ? colors.white : colors.primary} />
+        <ActivityIndicator
+          color={variant === "primary" || variant === "danger" ? colors.white : colors.primary}
+        />
       ) : (
         <>
           {leftIcon}
@@ -73,32 +76,41 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     gap: spacing.sm,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.lg
+    borderRadius: radius.full,
+    paddingHorizontal: spacing.lg,
+    borderWidth: 1,
+    borderColor: "transparent"
   },
   primary: {
-    backgroundColor: colors.primary
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    ...shadows.soft
   },
   secondary: {
-    backgroundColor: colors.primarySoft,
-    borderWidth: 1,
-    borderColor: colors.border
+    backgroundColor: colors.surface,
+    borderColor: colors.borderStrong
   },
   ghost: {
-    backgroundColor: "transparent"
+    backgroundColor: "transparent",
+    borderColor: "transparent"
   },
   danger: {
-    backgroundColor: colors.danger
+    backgroundColor: colors.danger,
+    borderColor: colors.danger
   },
   disabled: {
-    opacity: 0.55
+    opacity: 0.55,
+    shadowOpacity: 0,
+    elevation: 0
   },
   pressed: {
-    transform: [{ scale: 0.99 }]
+    opacity: 0.88,
+    transform: [{ scale: 0.985 }]
   },
   text: {
     fontSize: typography.body,
-    fontWeight: "700"
+    fontWeight: "800",
+    letterSpacing: -0.1
   },
   textOnDark: {
     color: colors.white

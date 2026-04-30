@@ -69,6 +69,20 @@ from public.appointments
 where patient_id <> :'patient_profile_id';
 -- Expected: 0 rows
 
+select id, title, read_status
+from public.notifications;
+-- Expected: only notifications where user_id = :patient_user_id
+
+select id, doctor_id
+from public.doctor_patient_relationships
+where patient_id = :'patient_profile_id';
+-- Expected: rows only for the signed-in patient's active/past doctor relationships
+
+select id, doctor_id
+from public.doctor_patient_relationships
+where patient_id = :'other_patient_profile_id';
+-- Expected: 0 rows
+
 update public.appointments
 set
   status = 'cancelled',
@@ -125,6 +139,20 @@ from public.patient_profiles
 where id = :'other_patient_profile_id';
 -- Expected: 0 rows unless relationship/appointment exists with this doctor
 
+select id, title, read_status
+from public.notifications;
+-- Expected: only notifications where user_id = :doctor_user_id
+
+select id, patient_id
+from public.doctor_patient_relationships
+where doctor_id = :'doctor_profile_id';
+-- Expected: rows only for relationships owned by this doctor profile
+
+select id, patient_id
+from public.doctor_patient_relationships
+where doctor_id = :'other_doctor_profile_id';
+-- Expected: 0 rows unless this doctor is also clinic-scoped to that doctor
+
 rollback;
 
 begin;
@@ -178,6 +206,23 @@ where actor_user_id = :'platform_admin_user_id'
 order by created_at desc
 limit 1;
 -- Expected: latest audit log for the verification update
+
+insert into public.notifications (
+  user_id,
+  title,
+  body,
+  type,
+  event
+)
+values (
+  :'doctor_user_id',
+  'Verification approved',
+  'Your doctor profile verification was approved.',
+  'verification',
+  'doctor_verification_approved'
+)
+returning id, event;
+-- Expected: platform admin can create targeted operational notifications
 
 update public.user_reports
 set

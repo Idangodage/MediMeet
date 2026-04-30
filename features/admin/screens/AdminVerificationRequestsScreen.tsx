@@ -143,7 +143,7 @@ function getStatusBadgeVariant(status: VerificationStatus) {
     return "success";
   }
 
-  if (status === "rejected") {
+  if (status === "rejected" || status === "suspended") {
     return "danger";
   }
 
@@ -163,7 +163,12 @@ function formatDate(value: string): string {
 
 const styles = StyleSheet.create({
   header: {
-    gap: spacing.sm
+    gap: spacing.sm,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint,
+    padding: spacing.xl
   },
   eyebrow: {
     color: colors.primary,
@@ -175,6 +180,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: typography.title,
     fontWeight: "900",
+    letterSpacing: -0.5,
     lineHeight: 34
   },
   subtitle: {

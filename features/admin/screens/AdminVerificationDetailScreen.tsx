@@ -16,6 +16,7 @@ import {
 } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
 import { colors, radius, spacing, typography } from "@/constants/theme";
+import { moderateDoctorProfile } from "@/services/admin.service";
 import {
   createVerificationDocumentSignedUrl,
   formatVerificationDocumentType,
@@ -60,6 +61,35 @@ export function AdminVerificationDetailScreen() {
       Alert.alert(
         "Review failed",
         error instanceof Error ? error.message : "Unable to save review."
+      );
+    }
+  });
+  const moderationMutation = useMutation({
+    mutationFn: (values: {
+      isPublic?: boolean | null;
+      verificationStatus?: VerificationStatus | null;
+    }) => {
+      return moderateDoctorProfile({
+        doctorId: doctorId ?? "",
+        note: verificationNote,
+        ...values
+      });
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["admin-verification-request", doctorId]
+        }),
+        queryClient.invalidateQueries({ queryKey: ["admin-verification-requests"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+        queryClient.invalidateQueries({ queryKey: ["admin-audit-logs"] })
+      ]);
+      Alert.alert("Profile updated", "Doctor profile moderation was saved.");
+    },
+    onError: (error) => {
+      Alert.alert(
+        "Moderation failed",
+        error instanceof Error ? error.message : "Unable to update profile."
       );
     }
   });
@@ -156,6 +186,7 @@ export function AdminVerificationDetailScreen() {
           <Info label="Specialties" value={request.doctor.specialties.join(", ") || "Not listed"} />
           <Info label="Experience" value={`${request.doctor.yearsOfExperience} years`} />
           <Info label="Required docs" value={`${request.uploadedRequiredDocumentCount}/${request.requiredDocumentCount}`} />
+          <Info label="Public visibility" value={request.doctor.isPublic ? "Public" : "Hidden"} />
         </View>
       </Card>
 
@@ -229,6 +260,55 @@ export function AdminVerificationDetailScreen() {
         </View>
       </Card>
 
+      <Card
+        title="Profile moderation"
+        subtitle="Publication and suspension changes are stored in audit logs."
+      >
+        <View style={styles.reviewActions}>
+          <Button
+            title="Publish verified profile"
+            disabled={!canApprove}
+            isLoading={moderationMutation.isPending}
+            onPress={() =>
+              moderationMutation.mutate({
+                verificationStatus: "approved",
+                isPublic: true
+              })
+            }
+          />
+          <Button
+            title="Hide public profile"
+            variant="secondary"
+            disabled={!request.doctor.isPublic}
+            isLoading={moderationMutation.isPending}
+            onPress={() => moderationMutation.mutate({ isPublic: false })}
+          />
+          <Button
+            title="Suspend doctor profile"
+            variant="danger"
+            isLoading={moderationMutation.isPending}
+            onPress={() =>
+              Alert.alert(
+                "Suspend doctor profile?",
+                "This hides the profile and blocks public discovery until an admin restores it.",
+                [
+                  { text: "Cancel", style: "cancel" },
+                  {
+                    text: "Suspend",
+                    style: "destructive",
+                    onPress: () =>
+                      moderationMutation.mutate({
+                        verificationStatus: "suspended",
+                        isPublic: false
+                      })
+                  }
+                ]
+              )
+            }
+          />
+        </View>
+      </Card>
+
       <Button title="Back to queue" variant="ghost" onPress={() => router.push(ROUTES.adminVerifications)} />
     </Screen>
   );
@@ -297,7 +377,7 @@ function getStatusBadgeVariant(status: VerificationStatus) {
     return "success";
   }
 
-  if (status === "rejected") {
+  if (status === "rejected" || status === "suspended") {
     return "danger";
   }
 
@@ -317,7 +397,12 @@ function formatDate(value: string): string {
 
 const styles = StyleSheet.create({
   header: {
-    gap: spacing.sm
+    gap: spacing.sm,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint,
+    padding: spacing.xl
   },
   eyebrow: {
     color: colors.primary,
@@ -329,6 +414,7 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: typography.title,
     fontWeight: "900",
+    letterSpacing: -0.5,
     lineHeight: 34
   },
   subtitle: {
@@ -337,7 +423,8 @@ const styles = StyleSheet.create({
     lineHeight: 24
   },
   profileHero: {
-    backgroundColor: colors.primarySoft
+    borderColor: colors.border,
+    backgroundColor: colors.primaryTint
   },
   profileHeader: {
     flexDirection: "row",
@@ -395,7 +482,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    backgroundColor: colors.background,
+    backgroundColor: colors.primaryTint,
     padding: spacing.md
   },
   documentHeader: {
