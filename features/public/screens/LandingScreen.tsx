@@ -3,26 +3,35 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Badge, Button, Card } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { colors, radius, spacing, typography } from "@/constants/theme";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 
 export function LandingScreen() {
   return (
     <Screen>
       <View style={styles.hero}>
-        <Badge label="MediMeet MVP" variant="primary" />
-        <Text style={styles.title}>Private Doctor Appointments Made Simple.</Text>
+        <PublicBrandLockup />
+        <View style={styles.heroBadge}>
+          <Text style={styles.heroBadgeText}>Existing MediMeet features</Text>
+        </View>
+        <Text style={styles.title}>Private doctor appointments made simple</Text>
         <Text style={styles.subtitle}>
-          A trusted mobile workspace for patients, private practice doctors,
-          clinics, and platform admins focused on verified discovery,
-          availability, booking, and SaaS practice tools.
+          Verified discovery, scheduling, onboarding, and practice workflows
+          are already in place. This screen now presents those same features in
+          a cleaner, more app-like public experience.
         </Text>
         <View style={styles.actions}>
           <Link href={ROUTES.onboardingIntro} asChild>
-            <Button title="Start onboarding" />
+            <Button title="Start onboarding" style={styles.flexButton} />
           </Link>
           <Link href={ROUTES.doctors} asChild>
-            <Button title="Browse doctors" variant="secondary" />
+            <Button
+              title="Browse doctors"
+              variant="secondary"
+              style={styles.flexButton}
+            />
           </Link>
         </View>
       </View>
@@ -88,35 +97,51 @@ function BenefitCard({
 const styles = StyleSheet.create({
   hero: {
     gap: spacing.lg,
-    borderRadius: 34,
+    borderRadius: 36,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.primaryTint,
+    borderColor: "#D8E8FF",
+    backgroundColor: "#F8FBFF",
     padding: spacing.xl
+  },
+  heroBadge: {
+    alignSelf: "flex-start",
+    borderRadius: radius.full,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs
+  },
+  heroBadgeText: {
+    color: colors.primaryDark,
+    fontSize: typography.small,
+    ...fontStyles.extraBold
   },
   title: {
     color: colors.text,
     fontSize: typography.hero,
-    fontWeight: "900",
     letterSpacing: -1,
-    lineHeight: 44
+    lineHeight: 44,
+    ...fontStyles.extraBold
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: typography.body,
-    lineHeight: 24
+    lineHeight: 24,
+    ...fontStyles.regular
   },
   actions: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.md
   },
+  flexButton: {
+    minWidth: 180
+  },
   cardTitle: {
     color: colors.text,
     fontSize: typography.title,
-    fontWeight: "900",
     letterSpacing: -0.5,
-    lineHeight: 36
+    lineHeight: 36,
+    ...fontStyles.extraBold
   },
   pointList: {
     gap: spacing.md
@@ -129,13 +154,14 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: radius.full,
-    backgroundColor: colors.success,
+    backgroundColor: colors.primary,
     marginTop: 7
   },
   pointText: {
     flex: 1,
     color: colors.textMuted,
     fontSize: typography.body,
-    lineHeight: 24
+    lineHeight: 24,
+    ...fontStyles.regular
   }
 });

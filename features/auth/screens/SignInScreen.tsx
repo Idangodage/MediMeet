@@ -5,9 +5,14 @@ import { Link, router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
-import { Button, Card, ErrorState, Input } from "@/components/ui";
-import { colors, spacing, typography } from "@/constants/theme";
+import { Button } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
+import { colors, spacing, typography } from "@/constants/theme";
+import { AuthGooglePlaceholderButton } from "@/features/auth/components/AuthGooglePlaceholderButton";
+import { AuthOrDivider } from "@/features/auth/components/AuthOrDivider";
+import { AuthTextField } from "@/features/auth/components/AuthTextField";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
   signInSchema,
   type SignInFormValues
@@ -16,6 +21,7 @@ import { signInWithEmail } from "@/services/auth.service";
 
 export function SignInScreen() {
   const [formError, setFormError] = useState<string | null>(null);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const {
     control,
     handleSubmit,
@@ -44,31 +50,29 @@ export function SignInScreen() {
   return (
     <Screen contentStyle={styles.content}>
       <View style={styles.header}>
-        <Text style={styles.brand}>MediMeet</Text>
-        <Text style={styles.title}>Sign in to your practice workspace</Text>
-        <Text style={styles.subtitle}>
-          Secure access for patients, clinicians, clinic teams, and platform
-          operators.
-        </Text>
+        <PublicBrandLockup centered />
+        <Text style={styles.title}>Welcome back</Text>
+        <Text style={styles.subtitle}>Log in to continue</Text>
       </View>
 
-      <Card>
-        {formError ? <ErrorState message={formError} /> : null}
+      {formError ? <Text style={styles.errorBanner}>{formError}</Text> : null}
 
+      <View style={styles.form}>
         <Controller
           control={control}
           name="email"
           render={({ field: { onBlur, onChange, value } }) => (
-            <Input
+            <AuthTextField
               autoCapitalize="none"
               autoComplete="email"
               autoCorrect={false}
               error={errors.email?.message}
               keyboardType="email-address"
-              label="Email"
+              label="Email Address"
+              leftIcon="mail"
               onBlur={onBlur}
               onChangeText={onChange}
-              placeholder="you@example.com"
+              placeholder="Enter your email"
               textContentType="emailAddress"
               value={value}
             />
@@ -79,36 +83,48 @@ export function SignInScreen() {
           control={control}
           name="password"
           render={({ field: { onBlur, onChange, value } }) => (
-            <Input
+            <AuthTextField
               autoCapitalize="none"
               error={errors.password?.message}
               label="Password"
+              leftIcon="lock"
               onBlur={onBlur}
               onChangeText={onChange}
-              placeholder="Your password"
-              secureTextEntry
+              onRightIconPress={() => setIsPasswordVisible((current) => !current)}
+              placeholder="Enter your password"
+              rightIcon={isPasswordVisible ? "eye" : "eyeOff"}
+              secureTextEntry={!isPasswordVisible}
               textContentType="password"
               value={value}
             />
           )}
         />
 
-        <Button title="Sign in" isLoading={isSubmitting} onPress={onSubmit} />
-        <Link href={ROUTES.forgotPassword} asChild>
-          <Button title="Forgot password?" variant="ghost" />
+        <Link href={ROUTES.forgotPassword} style={styles.forgotLink}>
+          Forgot password?
         </Link>
-      </Card>
+
+        <Button
+          title="Log In"
+          isLoading={isSubmitting}
+          leftIcon={
+            <View style={styles.buttonIconCircle}>
+              <Text style={styles.buttonIconArrow}>{">"}</Text>
+            </View>
+          }
+          onPress={onSubmit}
+          style={styles.primaryButton}
+        />
+      </View>
+
+      <AuthOrDivider />
+
+      <AuthGooglePlaceholderButton title="Continue with Google" />
 
       <Text style={styles.footerText}>
-        New to MediMeet?{" "}
+        Don't have an account?{" "}
         <Link href={ROUTES.signUp} style={styles.link}>
-          Create an account
-        </Link>
-      </Text>
-      <Text style={styles.footerText}>
-        Browsing as a guest?{" "}
-        <Link href={ROUTES.doctors} style={styles.link}>
-          View public doctors
+          Sign Up
         </Link>
       </Text>
     </Screen>
@@ -117,34 +133,66 @@ export function SignInScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    justifyContent: "center"
+    gap: spacing.xl,
+    paddingBottom: spacing["3xl"]
   },
   header: {
-    gap: spacing.sm
-  },
-  brand: {
-    color: colors.primary,
-    fontSize: typography.subtitle,
-    fontWeight: "900"
+    alignItems: "center",
+    gap: spacing.lg,
+    paddingTop: spacing["2xl"]
   },
   title: {
     color: colors.text,
-    fontSize: typography.title,
-    fontWeight: "900",
-    lineHeight: 34
+    fontSize: 52,
+    lineHeight: 58,
+    textAlign: "center",
+    ...fontStyles.extraBold
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: typography.body,
-    lineHeight: 24
+    fontSize: 18,
+    lineHeight: 24,
+    ...fontStyles.regular
+  },
+  errorBanner: {
+    color: colors.danger,
+    fontSize: typography.small,
+    ...fontStyles.semiBold
+  },
+  form: {
+    gap: spacing.lg
+  },
+  forgotLink: {
+    alignSelf: "flex-end",
+    color: "#2D73E1",
+    fontSize: 18,
+    ...fontStyles.medium
+  },
+  primaryButton: {
+    minHeight: 78
+  },
+  buttonIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.white,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  buttonIconArrow: {
+    color: colors.primary,
+    fontSize: 26,
+    lineHeight: 26,
+    ...fontStyles.bold
   },
   footerText: {
     color: colors.textMuted,
-    fontSize: typography.body,
-    textAlign: "center"
+    fontSize: 18,
+    textAlign: "center",
+    ...fontStyles.regular
   },
   link: {
-    color: colors.primaryDark,
-    fontWeight: "800"
+    color: "#2D73E1",
+    ...fontStyles.bold
   }
 });

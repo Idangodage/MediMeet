@@ -6,6 +6,7 @@ import {
   View
 } from "react-native";
 
+import { fontStyles } from "@/constants/fonts";
 import { colors, radius, spacing, typography } from "@/constants/theme";
 
 type InputProps = TextInputProps & {
@@ -40,7 +41,7 @@ const styles = StyleSheet.create({
   label: {
     color: colors.text,
     fontSize: typography.small,
-    fontWeight: "700"
+    ...fontStyles.semiBold
   },
   input: {
     minHeight: 52,
@@ -51,18 +52,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     paddingHorizontal: spacing.lg,
     fontSize: typography.body,
-    fontWeight: "600"
+    ...fontStyles.medium
   },
   inputError: {
     borderColor: colors.danger
   },
   helper: {
     color: colors.textMuted,
-    fontSize: typography.small
+    fontSize: typography.small,
+    ...fontStyles.regular
   },
   error: {
     color: colors.danger,
     fontSize: typography.small,
-    fontWeight: "600"
+    ...fontStyles.semiBold
   }
 });

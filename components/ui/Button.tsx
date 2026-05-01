@@ -9,6 +9,7 @@ import {
   type ViewStyle
 } from "react-native";
 
+import { fontStyles } from "@/constants/fonts";
 import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 
 type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
@@ -109,8 +110,8 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: typography.body,
-    fontWeight: "800",
-    letterSpacing: -0.1
+    letterSpacing: -0.1,
+    ...fontStyles.bold
   },
   textOnDark: {
     color: colors.white

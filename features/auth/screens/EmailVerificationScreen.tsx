@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Badge, Button, Card } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { colors, spacing, typography } from "@/constants/theme";
 
@@ -45,14 +46,15 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: typography.title,
-    fontWeight: "900",
     letterSpacing: -0.5,
-    lineHeight: 36
+    lineHeight: 36,
+    ...fontStyles.extraBold
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: typography.body,
-    lineHeight: 24
+    lineHeight: 24,
+    ...fontStyles.regular
   },
   infoBox: {
     borderRadius: 18,
@@ -64,8 +66,8 @@ const styles = StyleSheet.create({
   infoText: {
     color: colors.textMuted,
     fontSize: typography.small,
-    fontWeight: "700",
-    lineHeight: 19
+    lineHeight: 19,
+    ...fontStyles.semiBold
   },
   actions: {
     gap: spacing.md

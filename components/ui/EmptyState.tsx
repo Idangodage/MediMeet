@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { colors, radius, spacing, typography } from "@/constants/theme";
 import { Button } from "@/components/ui/Button";
+import { fontStyles } from "@/constants/fonts";
 
 type EmptyStateProps = {
   title: string;
@@ -49,18 +50,19 @@ const styles = StyleSheet.create({
   iconText: {
     color: colors.primary,
     fontSize: typography.subtitle,
-    fontWeight: "900"
+    ...fontStyles.extraBold
   },
   title: {
     color: colors.text,
     fontSize: typography.subtitle,
-    fontWeight: "900",
-    textAlign: "center"
+    textAlign: "center",
+    ...fontStyles.extraBold
   },
   message: {
     color: colors.textMuted,
     fontSize: typography.body,
     lineHeight: 23,
-    textAlign: "center"
+    textAlign: "center",
+    ...fontStyles.regular
   }
 });

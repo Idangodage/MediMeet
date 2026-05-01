@@ -2,10 +2,12 @@ import { Link, Redirect, useLocalSearchParams, type Href } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
-import { Badge, Button, Card } from "@/components/ui";
+import { Button, Card } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES, getHomeRouteForRole } from "@/constants/routes";
 import { colors, spacing, typography } from "@/constants/theme";
 import { useAuth } from "@/features/auth";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 
 export function LoginPromptScreen() {
   const { doctorId } = useLocalSearchParams<{ doctorId?: string }>();
@@ -21,9 +23,12 @@ export function LoginPromptScreen() {
 
   return (
     <Screen contentStyle={styles.content}>
-      <Card>
+      <Card style={styles.card}>
         <View style={styles.header}>
-          <Badge label="Account required" variant="warning" />
+          <PublicBrandLockup />
+          <View style={styles.accountChip}>
+            <Text style={styles.accountChipText}>Account required</Text>
+          </View>
           <Text style={styles.title}>Sign in to book this appointment</Text>
           <Text style={styles.subtitle}>
             Guests can view doctor profiles, availability, locations, and
@@ -69,19 +74,37 @@ const styles = StyleSheet.create({
   content: {
     justifyContent: "center"
   },
+  card: {
+    borderRadius: 32,
+    borderColor: "#D8E8FF",
+    backgroundColor: "#F9FBFF"
+  },
   header: {
     gap: spacing.md
+  },
+  accountChip: {
+    alignSelf: "flex-start",
+    borderRadius: 999,
+    backgroundColor: colors.warningSoft,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs
+  },
+  accountChipText: {
+    color: colors.warning,
+    fontSize: typography.small,
+    ...fontStyles.extraBold
   },
   title: {
     color: colors.text,
     fontSize: typography.title,
-    fontWeight: "900",
-    lineHeight: 34
+    lineHeight: 34,
+    ...fontStyles.extraBold
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: typography.body,
-    lineHeight: 24
+    lineHeight: 24,
+    ...fontStyles.regular
   },
   disclaimerBox: {
     borderRadius: 18,
@@ -93,8 +116,8 @@ const styles = StyleSheet.create({
   disclaimerText: {
     color: colors.warning,
     fontSize: typography.small,
-    fontWeight: "800",
-    lineHeight: 19
+    lineHeight: 19,
+    ...fontStyles.bold
   },
   actions: {
     gap: spacing.md

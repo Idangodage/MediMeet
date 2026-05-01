@@ -2,101 +2,114 @@ import { Link } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
-import { Badge, Button, Card } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { colors, radius, spacing, typography } from "@/constants/theme";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
+import { PublicHeroArtwork } from "@/features/public/components/PublicHeroArtwork";
 
 export function WelcomeScreen() {
   return (
     <Screen contentStyle={styles.content}>
       <View style={styles.hero}>
-        <View style={styles.logoMark}>
-          <Text style={styles.logoText}>M</Text>
-        </View>
-        <Badge label="Private healthcare appointments" variant="primary" />
+        <PublicBrandLockup centered />
         <Text style={styles.title}>
-          Find Trusted Doctors. Book Private Appointments Easily.
+          {"Find trusted doctors and\nmanage appointments easily"}
         </Text>
         <Text style={styles.subtitle}>
-          Connect with verified private practice doctors, check availability,
-          and book appointments with confidence.
+          Book appointments, consult with specialists, and take charge of your
+          health.
         </Text>
-        <View style={styles.disclaimerBox}>
-          <Text style={styles.disclaimerText}>
-            This platform is for doctor discovery and appointment booking only.
-            It is not for emergency medical care.
-          </Text>
-        </View>
-      </View>
 
-      <Card>
+        <View style={styles.featurePills}>
+          <View style={styles.featurePill}>
+            <Text style={styles.featurePillText}>Verified doctors</Text>
+          </View>
+          <View style={styles.featurePill}>
+            <Text style={styles.featurePillText}>Private booking</Text>
+          </View>
+          <View style={styles.featurePill}>
+            <Text style={styles.featurePillText}>Role-based care tools</Text>
+          </View>
+        </View>
+
+        <PublicHeroArtwork />
+
         <View style={styles.actions}>
           <Link href={ROUTES.landing} asChild>
             <Button title="Get Started" />
           </Link>
-          <Link href={ROUTES.doctors} asChild>
-            <Button title="Continue as Guest" variant="secondary" />
-          </Link>
           <Link href={ROUTES.signIn} asChild>
-            <Button title="I already have an account" variant="ghost" />
+            <Button title="Log In" variant="secondary" />
           </Link>
         </View>
-      </Card>
+
+        <Link href={ROUTES.doctors} style={styles.guestLink}>
+          Continue as guest.
+        </Link>
+      </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    justifyContent: "center"
+    justifyContent: "center",
+    paddingBottom: spacing.lg
   },
   hero: {
-    gap: spacing.lg,
-    borderRadius: 34,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.primaryTint,
-    padding: spacing.xl
-  },
-  logoMark: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 68,
-    height: 68,
-    borderRadius: radius.lg,
-    backgroundColor: colors.primary
-  },
-  logoText: {
-    color: colors.white,
-    fontSize: 34,
-    fontWeight: "900"
+    gap: spacing.md
   },
   title: {
+    width: "100%",
+    maxWidth: 360,
+    alignSelf: "center",
     color: colors.text,
-    fontSize: typography.hero,
-    fontWeight: "900",
+    fontSize: 28,
     letterSpacing: -1,
-    lineHeight: 44
+    lineHeight: 34,
+    textAlign: "center",
+    ...fontStyles.extraBold
   },
   subtitle: {
+    maxWidth: 460,
+    alignSelf: "center",
     color: colors.textMuted,
-    fontSize: typography.body,
-    lineHeight: 24
+    fontSize: 17,
+    lineHeight: 25,
+    textAlign: "center",
+    ...fontStyles.regular
   },
-  disclaimerBox: {
-    borderRadius: 18,
+  featurePills: {
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  featurePill: {
+    borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.warningSoft,
-    backgroundColor: colors.warningSoft,
-    padding: spacing.md
+    borderColor: "#D7E8FF",
+    backgroundColor: "#F6FAFF",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
   },
-  disclaimerText: {
-    color: colors.warning,
+  featurePillText: {
+    color: "#31558C",
     fontSize: typography.small,
-    fontWeight: "800",
-    lineHeight: 19
+    ...fontStyles.bold
   },
   actions: {
-    gap: spacing.md
+    gap: spacing.sm
+  },
+  guestLink: {
+    alignSelf: "center",
+    color: colors.primaryDark,
+    fontSize: typography.body,
+    textAlign: "center",
+    textDecorationLine: "underline",
+    ...fontStyles.semiBold
   }
 });

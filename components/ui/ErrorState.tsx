@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { colors, radius, spacing, typography } from "@/constants/theme";
 import { Button } from "@/components/ui/Button";
+import { fontStyles } from "@/constants/fonts";
 
 type ErrorStateProps = {
   title?: string;
@@ -39,11 +40,12 @@ const styles = StyleSheet.create({
   title: {
     color: colors.danger,
     fontSize: typography.subtitle,
-    fontWeight: "900"
+    ...fontStyles.extraBold
   },
   message: {
     color: colors.text,
     fontSize: typography.body,
-    lineHeight: 23
+    lineHeight: 23,
+    ...fontStyles.regular
   }
 });

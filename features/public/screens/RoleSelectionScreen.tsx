@@ -1,10 +1,14 @@
-import { Link } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { useState } from "react";
+import { Link, router } from "expo-router";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
-import { Badge, Button, Card } from "@/components/ui";
+import { Button } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { colors, spacing, typography } from "@/constants/theme";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
+import { PublicRoleIllustration } from "@/features/public/components/PublicRoleIllustration";
 import type { AuthenticatedRole } from "@/types/roles";
 
 type SelectableRole = Exclude<AuthenticatedRole, "platform_admin">;
@@ -16,89 +20,227 @@ const roles: Array<{
 }> = [
   {
     role: "patient",
-    label: "I am a Patient",
-    description: "Search doctors, book appointments, and manage your visits."
+    label: "Patient",
+    description:
+      "Find trusted doctors, check availability, and book appointments."
   },
   {
     role: "doctor",
-    label: "I am a Doctor",
-    description: "Create your professional profile, manage availability, and receive bookings."
+    label: "Doctor",
+    description:
+      "Create your professional profile, manage availability, and receive bookings."
   },
   {
     role: "clinic_admin",
-    label: "I manage a Clinic",
-    description: "Manage multiple doctors, clinic locations, and appointments."
+    label: "Clinic Admin",
+    description:
+      "Manage your clinic, locations, doctors, and appointments."
   }
 ];
 
 export function PublicRoleSelectionScreen() {
+  const [selectedRole, setSelectedRole] = useState<SelectableRole>("patient");
+
+  const handleContinue = () => {
+    router.push(`/role-intro/${selectedRole}` as const);
+  };
+
   return (
-    <Screen>
-      <View style={styles.header}>
-        <Badge label="Choose your workspace" variant="primary" />
-        <Text style={styles.title}>How will you use MediMeet?</Text>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.back()}
+          style={({ pressed }) => [
+            styles.backButton,
+            pressed ? styles.backButtonPressed : null
+          ]}
+        >
+          <Text style={styles.backButtonText}>{"<"}</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.hero}>
+        <PublicBrandLockup centered />
+        <Text style={styles.title}>Choose your role</Text>
         <Text style={styles.subtitle}>
-          Select your role so signup can take you into the right onboarding
-          flow and dashboard.
+          Select how you want to use MediMeet
         </Text>
       </View>
 
-      {roles.map((item) => (
-        <Card key={item.role}>
-          <Text style={styles.roleTitle}>{item.label}</Text>
-          <Text style={styles.roleDescription}>{item.description}</Text>
-          <Link href={`${ROUTES.signUp}?role=${item.role}` as const} asChild>
-            <Button title="Continue" />
-          </Link>
-        </Card>
-      ))}
+      <View style={styles.roleList}>
+        {roles.map((item) => {
+          const isSelected = selectedRole === item.role;
 
-      <Card title="Not ready to create an account?">
-        <View style={styles.actions}>
-          <Link href={ROUTES.doctors} asChild>
-            <Button title="Continue as Guest" variant="secondary" />
-          </Link>
-          <Link href={ROUTES.signIn} asChild>
-            <Button title="Login instead" variant="ghost" />
-          </Link>
-        </View>
-      </Card>
+          return (
+            <Pressable
+              accessibilityRole="button"
+              key={item.role}
+              onPress={() => setSelectedRole(item.role)}
+              style={({ pressed }) => [
+                styles.roleCard,
+                isSelected ? styles.roleCardSelected : null,
+                pressed ? styles.roleCardPressed : null
+              ]}
+            >
+              <PublicRoleIllustration role={item.role} />
+
+              <View style={styles.roleContent}>
+                <Text style={styles.roleTitle}>{item.label}</Text>
+                <Text style={styles.roleDescription}>{item.description}</Text>
+              </View>
+
+              <View style={styles.roleAside}>
+                {isSelected ? (
+                  <View style={styles.checkBadge}>
+                    <Text style={styles.checkBadgeText}>v</Text>
+                  </View>
+                ) : (
+                  <View style={styles.checkBadgeSpacer} />
+                )}
+                <Text style={styles.chevron}>{">"}</Text>
+              </View>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      <Button title="Continue" onPress={handleContinue} />
+
+      <Text style={styles.footerText}>
+        Already have an account?{" "}
+        <Link href={ROUTES.signIn} style={styles.loginLink}>
+          Log In
+        </Link>
+      </Text>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: spacing.md,
-    borderRadius: 30,
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xl
+  },
+  headerRow: {
+    alignItems: "flex-start"
+  },
+  backButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 64,
+    height: 64,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.primaryTint,
-    padding: spacing.xl
+    borderColor: "#D6E8FF",
+    backgroundColor: colors.surface
+  },
+  backButtonPressed: {
+    opacity: 0.86
+  },
+  backButtonText: {
+    color: "#17316B",
+    fontSize: 32,
+    lineHeight: 32,
+    ...fontStyles.medium
+  },
+  hero: {
+    alignItems: "center",
+    gap: spacing.md
   },
   title: {
     color: colors.text,
-    fontSize: typography.title,
-    fontWeight: "900",
-    letterSpacing: -0.5,
-    lineHeight: 36
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -1.1,
+    textAlign: "center",
+    ...fontStyles.extraBold
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: typography.body,
-    lineHeight: 24
+    fontSize: 17,
+    lineHeight: 24,
+    textAlign: "center",
+    ...fontStyles.regular
+  },
+  roleList: {
+    gap: spacing.lg
+  },
+  roleCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+    borderRadius: 30,
+    borderWidth: 1,
+    borderColor: "#E4ECF8",
+    backgroundColor: colors.surface,
+    padding: spacing.lg
+  },
+  roleCardSelected: {
+    borderColor: colors.primary,
+    shadowColor: "rgba(8, 124, 137, 0.18)",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 1,
+    shadowRadius: 24,
+    elevation: 4
+  },
+  roleCardPressed: {
+    opacity: 0.94
+  },
+  roleContent: {
+    flex: 1,
+    gap: spacing.sm
   },
   roleTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "900"
+    color: "#112B67",
+    fontSize: 28,
+    lineHeight: 32,
+    ...fontStyles.extraBold
   },
   roleDescription: {
+    color: "#6579A6",
+    fontSize: 15,
+    lineHeight: 22,
+    ...fontStyles.regular
+  },
+  roleAside: {
+    alignItems: "center",
+    justifyContent: "space-between",
+    alignSelf: "stretch",
+    paddingVertical: spacing.xs
+  },
+  checkBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: colors.primary
+  },
+  checkBadgeText: {
+    color: colors.white,
+    fontSize: 26,
+    lineHeight: 26,
+    ...fontStyles.bold
+  },
+  checkBadgeSpacer: {
+    width: 48,
+    height: 48
+  },
+  chevron: {
+    color: "#2D8DE0",
+    fontSize: 36,
+    lineHeight: 36,
+    ...fontStyles.medium
+  },
+  footerText: {
     color: colors.textMuted,
     fontSize: typography.body,
-    lineHeight: 24
+    textAlign: "center",
+    ...fontStyles.regular
   },
-  actions: {
-    gap: spacing.md
+  loginLink: {
+    color: "#2D73E1",
+    ...fontStyles.bold
   }
 });

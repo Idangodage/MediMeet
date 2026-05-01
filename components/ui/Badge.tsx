@@ -1,5 +1,6 @@
 import { StyleSheet, Text, View } from "react-native";
 
+import { fontStyles } from "@/constants/fonts";
 import { colors, radius, spacing, typography } from "@/constants/theme";
 
 type BadgeVariant = "neutral" | "primary" | "info" | "success" | "warning" | "danger";
@@ -51,8 +52,8 @@ const styles = StyleSheet.create({
   },
   text: {
     fontSize: typography.small,
-    fontWeight: "900",
-    letterSpacing: 0.1
+    letterSpacing: 0.1,
+    ...fontStyles.bold
   },
   neutralText: {
     color: colors.accent

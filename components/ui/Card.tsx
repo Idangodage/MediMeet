@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { StyleSheet, Text, View, type ViewProps } from "react-native";
 
+import { fontStyles } from "@/constants/fonts";
 import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 
 type CardProps = ViewProps & {
@@ -41,14 +42,14 @@ const styles = StyleSheet.create({
   title: {
     color: colors.text,
     fontSize: typography.subtitle,
-    fontWeight: "900",
-    letterSpacing: -0.2
+    letterSpacing: -0.2,
+    ...fontStyles.extraBold
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: typography.small,
-    fontWeight: "600",
-    lineHeight: 20
+    lineHeight: 20,
+    ...fontStyles.medium
   },
   footer: {
     borderTopWidth: 1,

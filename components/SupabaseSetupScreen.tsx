@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Card } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { colors, spacing, typography } from "@/constants/theme";
 import { getMissingEnvVars } from "@/lib/env";
 
@@ -48,28 +49,30 @@ const styles = StyleSheet.create({
   brand: {
     color: colors.primary,
     fontSize: typography.subtitle,
-    fontWeight: "900"
+    ...fontStyles.extraBold
   },
   title: {
     color: colors.text,
     fontSize: typography.title,
-    fontWeight: "900",
-    lineHeight: 34
+    lineHeight: 34,
+    ...fontStyles.extraBold
   },
   subtitle: {
     color: colors.textMuted,
     fontSize: typography.body,
-    lineHeight: 24
+    lineHeight: 24,
+    ...fontStyles.regular
   },
   envName: {
     color: colors.danger,
     fontSize: typography.body,
-    fontWeight: "800"
+    ...fontStyles.bold
   },
   instructions: {
     color: colors.text,
     fontSize: typography.body,
-    lineHeight: 24
+    lineHeight: 24,
+    ...fontStyles.regular
   },
   command: {
     alignSelf: "flex-start",
@@ -77,7 +80,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceMuted,
     color: colors.text,
     fontSize: typography.body,
-    fontWeight: "800",
-    padding: spacing.md
+    padding: spacing.md,
+    ...fontStyles.bold
   }
 });
