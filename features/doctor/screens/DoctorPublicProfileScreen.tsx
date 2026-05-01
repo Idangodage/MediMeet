@@ -7,6 +7,7 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View
 } from "react-native";
 
@@ -36,6 +37,8 @@ import {
 export function DoctorPublicProfileScreen() {
   const { doctorId } = useLocalSearchParams<{ doctorId?: string }>();
   const { role } = useAuth();
+  const { width } = useWindowDimensions();
+  const compactLayout = width < 640;
   const doctorQuery = useQuery({
     enabled: Boolean(doctorId),
     queryKey: ["public-doctor", doctorId],
@@ -137,13 +140,17 @@ export function DoctorPublicProfileScreen() {
     <Screen contentStyle={styles.content}>
       <View style={styles.topBar}>
         <AuthBackButton onPress={() => router.back()} />
-        <PublicBrandLockup centered />
+        <PublicBrandLockup centered compact={compactLayout} />
         <View style={styles.topBarSpacer} />
       </View>
 
-      <View style={styles.heroRow}>
-        <View style={styles.photoPanel}>
-          <Avatar imageUrl={doctor.profileImageUrl} name={doctor.fullName} size={188} />
+      <View style={[styles.heroRow, compactLayout ? styles.heroRowCompact : null]}>
+        <View style={[styles.photoPanel, compactLayout ? styles.photoPanelCompact : null]}>
+          <Avatar
+            imageUrl={doctor.profileImageUrl}
+            name={doctor.fullName}
+            size={compactLayout ? 148 : 188}
+          />
           <View style={styles.availablePill}>
             <View style={styles.availableDot} />
             <Text style={styles.availableText}>
@@ -152,20 +159,20 @@ export function DoctorPublicProfileScreen() {
           </View>
         </View>
 
-        <View style={styles.heroCopy}>
-          <Text style={styles.heroName}>
+        <View style={[styles.heroCopy, compactLayout ? styles.heroCopyCompact : null]}>
+          <Text style={[styles.heroName, compactLayout ? styles.heroNameCompact : null]}>
             {[doctor.title, doctor.fullName].filter(Boolean).join(" ")}
           </Text>
-          <Text style={styles.heroSpecialty}>
+          <Text style={[styles.heroSpecialty, compactLayout ? styles.heroSpecialtyCompact : null]}>
             {doctor.specialties[0] ?? "General practice"}
           </Text>
 
-          <View style={styles.metaRow}>
-            <Text style={styles.ratingText}>
+          <View style={[styles.metaRow, compactLayout ? styles.metaRowCompact : null]}>
+            <Text style={[styles.ratingText, compactLayout ? styles.metaTextCompact : null]}>
               {doctor.averageRating.toFixed(1)} ({doctor.reviews.length} reviews)
             </Text>
-            <Text style={styles.metaDivider}>|</Text>
-            <Text style={styles.metaText}>
+            {compactLayout ? null : <Text style={styles.metaDivider}>|</Text>}
+            <Text style={[styles.metaText, compactLayout ? styles.metaTextCompact : null]}>
               {doctor.yearsOfExperience}+ years experience
             </Text>
           </View>
@@ -189,7 +196,7 @@ export function DoctorPublicProfileScreen() {
         </Text>
       </InfoCard>
 
-      <View style={styles.twoColumnRow}>
+      <View style={[styles.twoColumnRow, compactLayout ? styles.twoColumnRowCompact : null]}>
         <InfoCard title="Qualifications" icon="bookmark" style={styles.halfCard}>
           {doctor.qualifications.length > 0 ? (
             doctor.qualifications.slice(0, 4).map((qualification) => (
@@ -215,7 +222,7 @@ export function DoctorPublicProfileScreen() {
         </InfoCard>
       </View>
 
-      <View style={styles.twoColumnRow}>
+      <View style={[styles.twoColumnRow, compactLayout ? styles.twoColumnRowCompact : null]}>
         <InfoCard title="Clinic Location" icon="location" style={styles.halfCard}>
           {primaryLocation ? (
             <>
@@ -249,7 +256,7 @@ export function DoctorPublicProfileScreen() {
         </InfoCard>
       </View>
 
-      <View style={styles.twoColumnRow}>
+      <View style={[styles.twoColumnRow, compactLayout ? styles.twoColumnRowCompact : null]}>
         <InfoCard title="Next Available Slot" icon="calendar" style={styles.halfCard}>
           {nextSlot ? (
             <>
@@ -395,6 +402,11 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
     alignItems: "center"
   },
+  heroRowCompact: {
+    flexDirection: "column",
+    alignItems: "center",
+    gap: spacing.lg
+  },
   photoPanel: {
     position: "relative",
     padding: spacing.sm,
@@ -403,6 +415,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     ...shadows.soft
+  },
+  photoPanelCompact: {
+    alignSelf: "flex-start"
   },
   availablePill: {
     position: "absolute",
@@ -432,22 +447,41 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.md
   },
+  heroCopyCompact: {
+    alignItems: "center",
+    flexShrink: 1,
+    minWidth: 0,
+    width: "100%"
+  },
   heroName: {
     color: "#0D2557",
     fontSize: 34,
     lineHeight: 40,
     ...fontStyles.extraBold
   },
+  heroNameCompact: {
+    fontSize: 30,
+    lineHeight: 36,
+    textAlign: "center"
+  },
   heroSpecialty: {
     color: "#1E63C6",
     fontSize: 18,
     ...fontStyles.medium
+  },
+  heroSpecialtyCompact: {
+    fontSize: 17,
+    textAlign: "center"
   },
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
     flexWrap: "wrap"
+  },
+  metaRowCompact: {
+    justifyContent: "center",
+    gap: spacing.sm
   },
   ratingText: {
     color: "#0D2557",
@@ -464,10 +498,16 @@ const styles = StyleSheet.create({
     fontSize: 17,
     ...fontStyles.medium
   },
+  metaTextCompact: {
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: "center"
+  },
   chipRow: {
     flexDirection: "row",
     gap: spacing.sm,
-    flexWrap: "wrap"
+    flexWrap: "wrap",
+    justifyContent: "center"
   },
   softChip: {
     borderRadius: radius.full,
@@ -517,6 +557,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: spacing.lg,
     alignItems: "stretch"
+  },
+  twoColumnRowCompact: {
+    flexDirection: "column",
+    gap: spacing.lg
   },
   halfCard: {
     flex: 1
