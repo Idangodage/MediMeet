@@ -3,7 +3,14 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
 
 import { Screen } from "@/components/Screen";
 import {
@@ -13,22 +20,23 @@ import {
   Card,
   EmptyState,
   ErrorState,
-  Input,
   LoadingState
 } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { colors, radius, spacing, typography } from "@/constants/theme";
+import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
 import { useAuth } from "@/features/auth";
 import {
   bookingSchema,
   type BookingFormValues
 } from "@/features/appointments/schemas/booking.schemas";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import {
   confirmPatientBooking,
   getDoctorBookingOptions
 } from "@/services/booking.service";
 import {
-  formatConsultationType,
   type PublicDoctor,
   type PublicDoctorAvailableSlot,
   type PublicDoctorLocation
@@ -54,14 +62,10 @@ export function PatientBookingScreen() {
   const { doctorId } = useLocalSearchParams<{ doctorId?: string }>();
   const { isLoading: isAuthLoading, role } = useAuth();
   const queryClient = useQueryClient();
-  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(
-    null
-  );
+  const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
-  const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(
-    null
-  );
+  const [confirmation, setConfirmation] = useState<BookingConfirmation | null>(null);
   const bookingQuery = useQuery({
     enabled: Boolean(doctorId) && role === "patient",
     queryKey: ["doctor-booking-options", doctorId],
@@ -71,6 +75,7 @@ export function PatientBookingScreen() {
     control,
     handleSubmit,
     reset,
+    watch,
     formState: { errors }
   } = useForm<BookingFormValues>({
     resolver: zodResolver(bookingSchema),
@@ -79,6 +84,7 @@ export function PatientBookingScreen() {
     }
   });
   const doctor = bookingQuery.data;
+  const reasonForVisit = watch("reasonForVisit") ?? "";
   const bookingLocations = useMemo(
     () => (doctor ? getBookableLocations(doctor) : []),
     [doctor]
@@ -92,8 +98,7 @@ export function PatientBookingScreen() {
     [doctor, selectedDate, selectedLocationId]
   );
   const selectedLocation =
-    bookingLocations.find((location) => location.id === selectedLocationId) ??
-    null;
+    bookingLocations.find((location) => location.id === selectedLocationId) ?? null;
   const selectedSlot =
     availableSlots.find((slot) => slot.id === selectedSlotId) ?? null;
   const bookingMutation = useMutation({
@@ -154,10 +159,7 @@ export function PatientBookingScreen() {
   }, [availableDates, selectedDate]);
 
   useEffect(() => {
-    if (
-      selectedSlotId &&
-      !availableSlots.some((slot) => slot.id === selectedSlotId)
-    ) {
+    if (selectedSlotId && !availableSlots.some((slot) => slot.id === selectedSlotId)) {
       setSelectedSlotId(null);
     }
   }, [availableSlots, selectedSlotId]);
@@ -183,12 +185,12 @@ export function PatientBookingScreen() {
       <Screen contentStyle={styles.centerContent}>
         <Card>
           <Badge label="Patient account required" variant="warning" />
-          <Text style={styles.title}>Sign in before booking</Text>
-          <Text style={styles.bodyText}>
-            Doctor profiles are public, but appointment booking requires a
-            patient account so appointment data stays private.
+          <Text style={styles.signInTitle}>Sign in before booking</Text>
+          <Text style={styles.helperText}>
+            Doctor profiles are public, but appointment booking requires a patient
+            account so appointment data stays private.
           </Text>
-          <View style={styles.actions}>
+          <View style={styles.stack}>
             <Button
               title="Sign in or create account"
               onPress={() =>
@@ -293,73 +295,76 @@ export function PatientBookingScreen() {
     });
   };
 
+  const activeStep = selectedSlot ? 4 : selectedDate ? 3 : selectedLocationId ? 2 : 1;
+
   return (
-    <Screen>
-      <Card style={styles.heroCard}>
-        <View style={styles.heroHeader}>
-          <Avatar
-            imageUrl={doctor.profileImageUrl}
-            name={doctor.fullName}
-            size={76}
-          />
-          <View style={styles.heroCopy}>
-            <Badge label="Automatic confirmation" variant="success" />
-            <Text style={styles.title}>
-              Book {[doctor.title, doctor.fullName].filter(Boolean).join(" ")}
-            </Text>
-            <Text style={styles.bodyText}>
-              Choose a location, date, and available slot. The MVP confirms
-              bookings automatically when the server locks the slot.
-            </Text>
-            <View style={styles.disclaimerBox}>
-              <Text style={styles.disclaimerText}>
-                This platform is for doctor discovery and appointment booking
-                only. It is not for emergency medical care.
-              </Text>
-            </View>
-          </View>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <AuthBackButton onPress={() => router.back()} />
+        <Text style={styles.pageTitle}>Book appointment</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <BookingProgress activeStep={activeStep} />
+
+      <View style={styles.doctorCard}>
+        <Avatar imageUrl={doctor.profileImageUrl} name={doctor.fullName} size={104} />
+        <View style={styles.doctorCopy}>
+          <Text style={styles.doctorName}>
+            {[doctor.title, doctor.fullName].filter(Boolean).join(" ")}
+          </Text>
+          <Text style={styles.doctorSpecialty}>
+            {doctor.specialties[0] ?? "General practice"}
+          </Text>
+          <Text style={styles.doctorMeta}>
+            {doctor.averageRating.toFixed(1)} ({doctor.reviews.length} reviews)
+          </Text>
+          <Text style={styles.doctorMeta}>{doctor.yearsOfExperience}+ years experience</Text>
         </View>
-      </Card>
+        <View style={styles.doctorTag}>
+          <Text style={styles.doctorTagText}>
+            {doctor.specialties[0] ?? "Consultation"}
+          </Text>
+        </View>
+      </View>
 
-      <BookingProgress
-        activeStep={
-          selectedSlot ? 4 : selectedDate ? 3 : selectedLocationId ? 2 : 1
-        }
-      />
+      <Pressable style={styles.locationCard}>
+        <View style={styles.locationIcon}>
+          <PatientGlyph name="location" color={colors.primary} size={28} />
+        </View>
+        <View style={styles.locationCopy}>
+          <Text style={styles.locationLabel}>Location</Text>
+          <Text style={styles.locationValue}>
+            {selectedLocation ? formatLocation(selectedLocation) : "Select a location"}
+          </Text>
+        </View>
+      </Pressable>
 
-      <Card title="1. Select location">
-        {bookingLocations.length > 0 ? (
-          <View style={styles.choiceGroup}>
-            {bookingLocations.map((location) => (
-              <Button
-                key={location.id}
-                title={formatLocation(location)}
-                variant={
-                  selectedLocationId === location.id ? "primary" : "secondary"
-                }
-                onPress={() => {
-                  setSelectedLocationId(location.id);
-                  setSelectedSlotId(null);
-                }}
-              />
-            ))}
-          </View>
-        ) : (
-          <EmptyState
-            title="No bookable locations"
-            message="This doctor has no active locations with available slots."
-          />
-        )}
-      </Card>
+      {bookingLocations.length > 1 ? (
+        <View style={styles.locationChoices}>
+          {bookingLocations.map((location) => (
+            <ChoiceChip
+              active={selectedLocationId === location.id}
+              key={location.id}
+              label={location.name ?? location.city ?? "Clinic"}
+              onPress={() => {
+                setSelectedLocationId(location.id);
+                setSelectedSlotId(null);
+              }}
+            />
+          ))}
+        </View>
+      ) : null}
 
-      <Card title="2. Select date">
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Select date</Text>
         {availableDates.length > 0 ? (
-          <View style={styles.choiceGroup}>
+          <View style={styles.dateRow}>
             {availableDates.map((date) => (
-              <Button
+              <DateChip
+                active={selectedDate === date}
+                date={date}
                 key={date}
-                title={formatDateLabel(date)}
-                variant={selectedDate === date ? "primary" : "secondary"}
                 onPress={() => {
                   setSelectedDate(date);
                   setSelectedSlotId(null);
@@ -370,25 +375,22 @@ export function PatientBookingScreen() {
         ) : (
           <EmptyState
             title="No available dates"
-            message="Choose another location or check back when the doctor opens more availability."
+            message="Choose another location or check back when more slots open."
           />
         )}
-      </Card>
+      </View>
 
-      <Card title="3. Select time slot">
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Select time</Text>
         {availableSlots.length > 0 ? (
-          <View style={styles.slotGrid}>
+          <View style={styles.timeGrid}>
             {availableSlots.map((slot) => (
-              <View key={slot.id} style={styles.slotItem}>
-                <Button
-                  title={`${formatTime(slot.startTime)} - ${formatTime(
-                    slot.endTime
-                  )}`}
-                  variant={selectedSlotId === slot.id ? "primary" : "secondary"}
-                  onPress={() => setSelectedSlotId(slot.id)}
-                />
-                <Badge label={formatConsultationType(slot.consultationType)} />
-              </View>
+              <TimeChip
+                active={selectedSlotId === slot.id}
+                key={slot.id}
+                label={formatTime(slot.startTime)}
+                onPress={() => setSelectedSlotId(slot.id)}
+              />
             ))}
           </View>
         ) : (
@@ -397,44 +399,48 @@ export function PatientBookingScreen() {
             message="No open slots exist for the selected location and date."
           />
         )}
-      </Card>
+      </View>
 
-      <Card
-        title="4. Add reason and confirm"
-        subtitle="The reason is optional and visible only to your care team."
-      >
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Reason for visit</Text>
+        <Text style={styles.sectionHint}>(optional)</Text>
         <Controller
           control={control}
           name="reasonForVisit"
           render={({ field: { onBlur, onChange, value } }) => (
-            <Input
-              error={errors.reasonForVisit?.message}
-              label="Reason for visit"
-              multiline
-              numberOfLines={4}
-              onBlur={onBlur}
-              onChangeText={onChange}
-              placeholder="Example: recurring headache, annual checkup, follow-up..."
-              style={styles.reasonInput}
-              textAlignVertical="top"
-              value={value ?? ""}
-            />
+            <View style={styles.reasonWrap}>
+              <TextInput
+                multiline
+                numberOfLines={5}
+                onBlur={onBlur}
+                onChangeText={onChange}
+                placeholder="Please describe the reason for your visit"
+                placeholderTextColor="#9AA9C1"
+                style={[
+                  styles.reasonInput,
+                  errors.reasonForVisit?.message ? styles.reasonInputError : null
+                ]}
+                textAlignVertical="top"
+                value={value ?? ""}
+              />
+              <Text style={styles.characterCount}>{reasonForVisit.length}/250</Text>
+            </View>
           )}
         />
+        {errors.reasonForVisit?.message ? (
+          <Text style={styles.errorText}>{errors.reasonForVisit.message}</Text>
+        ) : null}
+      </View>
 
-        <BookingSummary
-          doctor={doctor}
-          location={selectedLocation}
-          slot={selectedSlot}
-        />
+      <BookingSummaryStrip location={selectedLocation} slot={selectedSlot} />
 
-        <Button
-          disabled={!selectedSlot || bookingMutation.isPending}
-          isLoading={bookingMutation.isPending}
-          title="Confirm booking"
-          onPress={handleSubmit(onSubmit)}
-        />
-      </Card>
+      <Button
+        disabled={!selectedSlot || bookingMutation.isPending}
+        isLoading={bookingMutation.isPending}
+        title="Confirm Booking"
+        onPress={handleSubmit(onSubmit)}
+        style={styles.confirmButton}
+      />
     </Screen>
   );
 }
@@ -457,32 +463,29 @@ function BookingConfirmationView({
   return (
     <Screen contentStyle={styles.centerContent}>
       <Card style={styles.confirmationCard}>
-        <View style={styles.successMark}>
-          <Text style={styles.successMarkText}>OK</Text>
+        <View style={styles.confirmationMark}>
+          <PatientGlyph color={colors.success} name="calendar" size={40} />
         </View>
         <Badge label="Appointment confirmed" variant="success" />
-        <Text style={styles.title}>Your appointment is booked</Text>
-        <Text style={styles.bodyText}>
+        <Text style={styles.confirmationTitle}>Your appointment is booked</Text>
+        <Text style={styles.helperText}>
           The doctor has been notified. You can find this appointment in your
           patient dashboard.
         </Text>
-        <View style={styles.summaryBox}>
-          <Info label="Doctor" value={formatDoctorName(doctor)} />
-          <Info label="Location" value={formatLocation(confirmation.location)} />
-          <Info
+        <View style={styles.confirmationSummary}>
+          <SummaryItem label="Doctor" value={formatDoctorName(doctor)} />
+          <SummaryItem label="Location" value={formatLocation(confirmation.location)} />
+          <SummaryItem
             label="Date and time"
-            value={`${formatDateTime(confirmation.slot.startTime)} - ${formatTime(
-              confirmation.slot.endTime
+            value={`${formatDateLong(confirmation.slot.startTime)} at ${formatTime(
+              confirmation.slot.startTime
             )}`}
           />
-          <Info
-            label="Appointment ID"
-            value={confirmation.appointmentId.slice(0, 8)}
-          />
-          <Info label="Payment method" value={paymentPreview.methodLabel} />
-          <Text style={styles.bodyText}>{paymentPreview.note}</Text>
+          <SummaryItem label="Appointment ID" value={confirmation.appointmentId.slice(0, 8)} />
+          <SummaryItem label="Payment method" value={paymentPreview.methodLabel} />
+          <Text style={styles.helperText}>{paymentPreview.note}</Text>
         </View>
-        <View style={styles.actions}>
+        <View style={styles.stack}>
           <Button title="View patient dashboard" onPress={onViewDashboard} />
           <Button
             title="Back to doctor profile"
@@ -496,81 +499,171 @@ function BookingConfirmationView({
 }
 
 function BookingProgress({ activeStep }: { activeStep: number }) {
-  const steps = ["Location", "Date", "Time", "Confirm"];
+  const steps = [
+    "Select details",
+    "Your information",
+    "Review",
+    "Confirmation"
+  ];
 
   return (
-    <Card style={styles.progressCard}>
-      <View style={styles.progressRow}>
-        {steps.map((step, index) => {
-          const stepNumber = index + 1;
-          const isActive = activeStep >= stepNumber;
+    <View style={styles.progressRow}>
+      {steps.map((step, index) => {
+        const stepNumber = index + 1;
+        const isActive = activeStep >= stepNumber;
 
-          return (
-            <View key={step} style={styles.progressItem}>
-              <View style={[styles.progressDot, isActive && styles.progressDotActive]}>
+        return (
+          <View key={step} style={styles.progressItem}>
+            <View style={styles.progressLineWrap}>
+              <View
+                style={[styles.progressDot, isActive ? styles.progressDotActive : null]}
+              >
                 <Text
                   style={[
                     styles.progressDotText,
-                    isActive && styles.progressDotTextActive
+                    isActive ? styles.progressDotTextActive : null
                   ]}
                 >
                   {stepNumber}
                 </Text>
               </View>
-              <Text style={[styles.progressLabel, isActive && styles.progressLabelActive]}>
-                {step}
-              </Text>
+              {index < steps.length - 1 ? <View style={styles.progressLine} /> : null}
             </View>
-          );
-        })}
-      </View>
-    </Card>
-  );
-}
-
-function BookingSummary({
-  doctor,
-  location,
-  slot
-}: {
-  doctor: PublicDoctor;
-  location: PublicDoctorLocation | null;
-  slot: PublicDoctorAvailableSlot | null;
-}) {
-  const paymentPreview = getAppointmentPaymentPreview({
-    amount: doctor.consultationFee
-  });
-
-  return (
-    <View style={styles.summaryBox}>
-      <Info label="Doctor" value={formatDoctorName(doctor)} />
-      <Info label="Location" value={location ? formatLocation(location) : "Not selected"} />
-      <Info
-        label="Time"
-        value={
-          slot
-            ? `${formatDateTime(slot.startTime)} - ${formatTime(slot.endTime)}`
-            : "Not selected"
-        }
-      />
-      <Info
-        label="Consultation fee"
-        value={formatPaymentAmount(
-          paymentPreview.amount,
-          paymentPreview.currency
-        )}
-      />
-      <Info label="Payment method" value={paymentPreview.methodLabel} />
-      <Text style={styles.bodyText}>{paymentPreview.note}</Text>
+            <Text style={[styles.progressLabel, isActive ? styles.progressLabelActive : null]}>
+              {step}
+            </Text>
+          </View>
+        );
+      })}
     </View>
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
+function ChoiceChip({
+  active,
+  label,
+  onPress
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) {
   return (
-    <View style={styles.infoItem}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.choiceChip, active ? styles.choiceChipActive : null]}
+    >
+      <Text style={[styles.choiceChipText, active ? styles.choiceChipTextActive : null]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function DateChip({
+  active,
+  date,
+  onPress
+}: {
+  active: boolean;
+  date: string;
+  onPress: () => void;
+}) {
+  const values = getDateParts(date);
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.dateChip, active ? styles.dateChipActive : null]}
+    >
+      <Text style={[styles.dateDay, active ? styles.dateTextActive : null]}>{values.day}</Text>
+      <Text style={[styles.dateNumber, active ? styles.dateTextActive : null]}>
+        {values.dayOfMonth}
+      </Text>
+      <Text style={[styles.dateMonth, active ? styles.dateTextActive : null]}>{values.month}</Text>
+    </Pressable>
+  );
+}
+
+function TimeChip({
+  active,
+  label,
+  onPress
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      onPress={onPress}
+      style={[styles.timeChip, active ? styles.timeChipActive : null]}
+    >
+      <Text style={[styles.timeChipText, active ? styles.timeChipTextActive : null]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
+function BookingSummaryStrip({
+  location,
+  slot
+}: {
+  location: PublicDoctorLocation | null;
+  slot: PublicDoctorAvailableSlot | null;
+}) {
+  return (
+    <View style={styles.summaryStrip}>
+      <SummaryBlock
+        icon="calendar"
+        label="Date"
+        value={slot ? formatDateLong(slot.startTime) : "Not selected"}
+      />
+      <SummaryBlock
+        icon="bookmark"
+        label="Time"
+        value={slot ? formatTime(slot.startTime) : "Not selected"}
+      />
+      <SummaryBlock
+        icon="location"
+        label="Clinic"
+        value={location ? location.name ?? location.city ?? "Clinic" : "Not selected"}
+      />
+    </View>
+  );
+}
+
+function SummaryBlock({
+  icon,
+  label,
+  value
+}: {
+  icon: "calendar" | "bookmark" | "location";
+  label: string;
+  value: string;
+}) {
+  return (
+    <View style={styles.summaryBlock}>
+      <View style={styles.summaryIconCircle}>
+        <PatientGlyph color={colors.primary} name={icon} size={24} />
+      </View>
+      <View style={styles.summaryTextWrap}>
+        <Text style={styles.summaryLabel}>{label}</Text>
+        <Text style={styles.summaryValue}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
+function SummaryItem({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.summaryItem}>
+      <Text style={styles.summaryItemLabel}>{label}</Text>
+      <Text style={styles.summaryItemValue}>{value}</Text>
     </View>
   );
 }
@@ -629,75 +722,64 @@ function formatLocation(location: PublicDoctorLocation): string {
   return details ? `${label} - ${details}` : label;
 }
 
-function formatDateLabel(value: string): string {
+function formatDateLong(value: string): string {
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     month: "short",
-    day: "numeric"
-  }).format(new Date(`${value}T00:00:00`));
-}
-
-function formatDateTime(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short"
+    day: "numeric",
+    year: "numeric"
   }).format(new Date(value));
 }
 
 function formatTime(value: string): string {
   return new Intl.DateTimeFormat(undefined, {
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit"
   }).format(new Date(value));
+}
+
+function getDateParts(value: string) {
+  const date = new Date(`${value}T00:00:00`);
+  const parts = new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short"
+  })
+    .formatToParts(date)
+    .reduce<Record<string, string>>((result, part) => {
+      if (part.type !== "literal") {
+        result[part.type] = part.value;
+      }
+      return result;
+    }, {});
+
+  return {
+    day: parts.weekday ?? "",
+    dayOfMonth: parts.day ?? "",
+    month: parts.month ?? ""
+  };
 }
 
 const styles = StyleSheet.create({
   centerContent: {
     justifyContent: "center"
   },
-  heroCard: {
-    borderColor: colors.border,
-    backgroundColor: colors.primaryTint
-  },
-  heroHeader: {
-    alignItems: "flex-start",
-    flexDirection: "row",
+  content: {
     gap: spacing.lg
   },
-  heroCopy: {
-    flex: 1,
-    gap: spacing.sm
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
   },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: "900",
-    letterSpacing: -0.5,
-    lineHeight: 34
+  headerSpacer: {
+    width: 52
   },
-  bodyText: {
-    color: colors.textMuted,
-    fontSize: typography.body,
-    lineHeight: 24
-  },
-  disclaimerBox: {
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: colors.warningSoft,
-    backgroundColor: colors.warningSoft,
-    padding: spacing.md
-  },
-  disclaimerText: {
-    color: colors.warning,
-    fontSize: typography.small,
-    fontWeight: "800",
-    lineHeight: 19
-  },
-  choiceGroup: {
-    gap: spacing.sm
-  },
-  progressCard: {
-    paddingVertical: spacing.md
+  pageTitle: {
+    color: "#0D2557",
+    fontSize: 32,
+    lineHeight: 38,
+    ...fontStyles.extraBold
   },
   progressRow: {
     flexDirection: "row",
@@ -705,94 +787,355 @@ const styles = StyleSheet.create({
     gap: spacing.sm
   },
   progressItem: {
-    alignItems: "center",
     flex: 1,
-    gap: spacing.xs
+    gap: spacing.sm,
+    alignItems: "center"
+  },
+  progressLineWrap: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center"
   },
   progressDot: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 32,
-    height: 32,
-    borderRadius: radius.full,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted
+    borderColor: "#D4DFEF",
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center"
   },
   progressDotActive: {
     borderColor: colors.primary,
     backgroundColor: colors.primary
   },
   progressDotText: {
-    color: colors.textMuted,
-    fontSize: typography.small,
-    fontWeight: "900"
+    color: "#7A8CAA",
+    fontSize: 18,
+    ...fontStyles.medium
   },
   progressDotTextActive: {
     color: colors.white
   },
+  progressLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#D4DFEF",
+    marginLeft: spacing.sm
+  },
   progressLabel: {
-    color: colors.textMuted,
-    fontSize: typography.tiny,
-    fontWeight: "900",
+    color: "#7A8CAA",
+    fontSize: 13,
     textAlign: "center",
-    textTransform: "uppercase"
+    ...fontStyles.medium
   },
   progressLabelActive: {
-    color: colors.primaryDark
+    color: colors.primary
   },
-  slotGrid: {
+  doctorCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.lg
+  },
+  doctorCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  doctorName: {
+    color: "#0D2557",
+    fontSize: 26,
+    lineHeight: 30,
+    ...fontStyles.extraBold
+  },
+  doctorSpecialty: {
+    color: "#344E79",
+    fontSize: 18,
+    ...fontStyles.medium
+  },
+  doctorMeta: {
+    color: "#5E7398",
+    fontSize: 16,
+    ...fontStyles.regular
+  },
+  doctorTag: {
+    borderRadius: radius.full,
+    backgroundColor: "#EAF8FA",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm
+  },
+  doctorTagText: {
+    color: colors.primary,
+    fontSize: 15,
+    ...fontStyles.medium
+  },
+  locationCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.lg
+  },
+  locationIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: "#F2FBFC",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  locationCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  locationLabel: {
+    color: "#0D2557",
+    fontSize: 18,
+    ...fontStyles.bold
+  },
+  locationValue: {
+    color: "#556E9B",
+    fontSize: 17,
+    lineHeight: 24,
+    ...fontStyles.regular
+  },
+  locationChoices: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.sm
+  },
+  choiceChip: {
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: "#CDE7EF",
+    backgroundColor: "#F2FBFC",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm
+  },
+  choiceChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primary
+  },
+  choiceChipText: {
+    color: "#24406F",
+    fontSize: 15,
+    ...fontStyles.medium
+  },
+  choiceChipTextActive: {
+    color: colors.white
+  },
+  section: {
     gap: spacing.md
   },
-  slotItem: {
-    gap: spacing.sm,
-    borderRadius: radius.md,
-    backgroundColor: colors.background,
+  sectionTitle: {
+    color: "#0D2557",
+    fontSize: 20,
+    ...fontStyles.extraBold
+  },
+  sectionHint: {
+    marginTop: -spacing.sm,
+    color: "#7689A9",
+    fontSize: 16,
+    ...fontStyles.regular
+  },
+  dateRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md
+  },
+  dateChip: {
+    width: 98,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: spacing.xs,
+    paddingVertical: spacing.md
+  },
+  dateChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: "#F2FBFC"
+  },
+  dateDay: {
+    color: "#7A8CAA",
+    fontSize: 16,
+    ...fontStyles.medium
+  },
+  dateNumber: {
+    color: "#0D2557",
+    fontSize: 24,
+    lineHeight: 28,
+    ...fontStyles.extraBold
+  },
+  dateMonth: {
+    color: "#7A8CAA",
+    fontSize: 16,
+    ...fontStyles.medium
+  },
+  dateTextActive: {
+    color: colors.primary
+  },
+  timeGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: spacing.md
+  },
+  timeChip: {
+    width: "23%",
+    minWidth: 130,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "#39B5BF",
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.md
+  },
+  timeChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary
+  },
+  timeChipText: {
+    color: colors.primary,
+    fontSize: 16,
+    ...fontStyles.bold
+  },
+  timeChipTextActive: {
+    color: colors.white
+  },
+  reasonWrap: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "#D7E4FA",
+    backgroundColor: colors.surface,
     padding: spacing.md
   },
   reasonInput: {
-    minHeight: 112,
-    paddingTop: spacing.md
+    minHeight: 126,
+    color: "#243F73",
+    fontSize: 18,
+    lineHeight: 26,
+    ...fontStyles.regular
   },
-  summaryBox: {
-    gap: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.background,
+  reasonInputError: {
+    borderColor: colors.danger
+  },
+  characterCount: {
+    alignSelf: "flex-end",
+    color: "#8093BC",
+    fontSize: 14,
+    ...fontStyles.medium
+  },
+  errorText: {
+    color: colors.danger,
+    fontSize: typography.small,
+    ...fontStyles.semiBold
+  },
+  summaryStrip: {
+    flexDirection: "row",
+    gap: spacing.lg,
+    borderRadius: radius.lg,
+    backgroundColor: "#F2FBFC",
+    borderWidth: 1,
+    borderColor: "#D7EEF2",
     padding: spacing.lg
   },
-  infoItem: {
+  summaryBlock: {
+    flex: 1,
+    flexDirection: "row",
+    gap: spacing.md,
+    alignItems: "center"
+  },
+  summaryIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  summaryTextWrap: {
+    flex: 1,
     gap: spacing.xs
   },
-  infoLabel: {
-    color: colors.textMuted,
-    fontSize: typography.small,
-    fontWeight: "900",
-    textTransform: "uppercase"
+  summaryLabel: {
+    color: "#7A8CAA",
+    fontSize: 14,
+    ...fontStyles.medium
   },
-  infoValue: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "800",
-    lineHeight: 23
+  summaryValue: {
+    color: "#0D2557",
+    fontSize: 16,
+    lineHeight: 24,
+    ...fontStyles.bold
+  },
+  confirmButton: {
+    minHeight: 72
   },
   confirmationCard: {
+    gap: spacing.lg,
+    alignItems: "center"
+  },
+  confirmationMark: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    backgroundColor: colors.successSoft,
     alignItems: "center",
-    backgroundColor: colors.successSoft
+    justifyContent: "center"
   },
-  successMark: {
-    alignItems: "center",
-    justifyContent: "center",
-    width: 64,
-    height: 64,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface
+  confirmationTitle: {
+    color: "#0D2557",
+    fontSize: 30,
+    textAlign: "center",
+    ...fontStyles.extraBold
   },
-  successMarkText: {
-    color: colors.success,
-    fontSize: 34,
-    fontWeight: "900"
+  confirmationSummary: {
+    width: "100%",
+    gap: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: "#F8FBFF",
+    padding: spacing.lg
   },
-  actions: {
+  summaryItem: {
+    gap: spacing.xs
+  },
+  summaryItemLabel: {
+    color: "#8093BC",
+    fontSize: 13,
+    textTransform: "uppercase",
+    ...fontStyles.bold
+  },
+  summaryItemValue: {
+    color: "#0D2557",
+    fontSize: 16,
+    lineHeight: 24,
+    ...fontStyles.bold
+  },
+  signInTitle: {
+    color: "#0D2557",
+    fontSize: 28,
+    ...fontStyles.extraBold
+  },
+  helperText: {
+    color: "#556E9B",
+    fontSize: 16,
+    lineHeight: 24,
+    textAlign: "center",
+    ...fontStyles.regular
+  },
+  stack: {
+    width: "100%",
     gap: spacing.md
   }
 });

@@ -3,21 +3,30 @@ import { Controller, useForm, type Control } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, Linking, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  Linking,
+  Pressable,
+  StyleSheet,
+  Text,
+  View
+} from "react-native";
 
 import { Screen } from "@/components/Screen";
 import {
   Avatar,
   Badge,
   Button,
-  Card,
   EmptyState,
   ErrorState,
   Input,
   LoadingState
 } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { colors, radius, spacing, typography } from "@/constants/theme";
+import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import {
   appointmentReviewSchema,
   type AppointmentReviewFormInput,
@@ -183,156 +192,178 @@ export function PatientAppointmentDetailScreen() {
   const paymentPreview = getAppointmentPaymentPreview({
     amount: appointment.doctor?.consultationFee ?? 0
   });
+  const referenceNumber = `CL-${appointment.id.slice(0, 8).toUpperCase()}`;
 
   return (
-    <Screen>
-      <Card style={styles.heroCard}>
-        <View style={styles.heroHeader}>
-          <Avatar
-            imageUrl={appointment.doctor?.profileImageUrl}
-            name={appointment.doctor?.fullName ?? "Doctor"}
-            size={76}
-          />
-          <View style={styles.heroCopy}>
-            <Badge
-              label={formatAppointmentStatus(appointment.status)}
-              variant={isCancelledAppointment(appointment) ? "danger" : "success"}
-            />
-            <Text style={styles.title}>
-              {[appointment.doctor?.title, appointment.doctor?.fullName]
-                .filter(Boolean)
-                .join(" ") || "Doctor"}
-            </Text>
-            <Text style={styles.subtitle}>
-              {appointment.doctor?.specialties.join(", ") || "General practice"}
-            </Text>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <AuthBackButton onPress={() => router.back()} />
+        <Text style={styles.pageTitle}>Appointment details</Text>
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <View
+        style={[
+          styles.statusBanner,
+          isCancelledAppointment(appointment)
+            ? styles.statusBannerDanger
+            : styles.statusBannerSuccess
+        ]}
+      >
+        <View
+          style={[
+            styles.statusIconCircle,
+            isCancelledAppointment(appointment)
+              ? styles.statusIconCircleDanger
+              : styles.statusIconCircleSuccess
+          ]}
+        >
+          <Text style={styles.statusIconText}>
+            {isCancelledAppointment(appointment) ? "!" : "OK"}
+          </Text>
+        </View>
+        <View style={styles.statusCopy}>
+          <Text
+            style={[
+              styles.statusTitle,
+              isCancelledAppointment(appointment)
+                ? styles.statusTitleDanger
+                : styles.statusTitleSuccess
+            ]}
+          >
+            {formatAppointmentStatus(appointment.status)}
+          </Text>
+          <Text style={styles.statusText}>
+            {isCancelledAppointment(appointment)
+              ? appointment.cancellationReason || "This appointment has been cancelled."
+              : "Your appointment is confirmed. We look forward to seeing you."}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.doctorCard}>
+        <Avatar
+          imageUrl={appointment.doctor?.profileImageUrl}
+          name={appointment.doctor?.fullName ?? "Doctor"}
+          size={110}
+        />
+        <View style={styles.doctorCopy}>
+          <Text style={styles.doctorName}>
+            {[appointment.doctor?.title, appointment.doctor?.fullName]
+              .filter(Boolean)
+              .join(" ") || "Doctor"}
+          </Text>
+          <Text style={styles.doctorSpecialty}>
+            {appointment.doctor?.specialties[0] ?? "General practice"}
+          </Text>
+          <Text style={styles.verifiedText}>Verified provider</Text>
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() =>
+            favouriteMutation.mutate({
+              doctorId: appointment.doctorId,
+              isFavourite: !appointment.isFavouriteDoctor
+            })
+          }
+          style={styles.favouriteButton}
+        >
+          <Text style={styles.favouriteButtonText}>
+            {appointment.isFavouriteDoctor ? "Saved" : "Save"}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.detailsCard}>
+        <DetailRow icon="calendar" title="Date & Time">
+          <Text style={styles.detailPrimary}>
+            {formatPrettyDate(appointment.appointmentDate)}
+          </Text>
+          <Text style={styles.detailSecondary}>
+            {trimSeconds(appointment.startTime)} - {trimSeconds(appointment.endTime)}
+          </Text>
+        </DetailRow>
+
+        <Divider />
+
+        <DetailRow icon="location" title="Clinic Location">
+          <Text style={styles.detailPrimary}>
+            {appointment.location?.name ?? appointment.location?.city ?? "Clinic location"}
+          </Text>
+          <Text style={styles.detailSecondary}>
+            {appointment.location
+              ? [appointment.location.address, appointment.location.city]
+                  .filter(Boolean)
+                  .join(", ")
+              : "Location unavailable"}
+          </Text>
+          {appointment.location ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => openDirections(appointment)}
+            >
+              <Text style={styles.detailLink}>Get Directions</Text>
+            </Pressable>
+          ) : null}
+        </DetailRow>
+
+        <Divider />
+
+        <DetailRow icon="bookmark" title="Reason for Visit">
+          <Text style={styles.detailSecondary}>
+            {appointment.reasonForVisit || "No reason provided."}
+          </Text>
+        </DetailRow>
+
+        <Divider />
+
+        <DetailRow icon="shield" title="Payment Method">
+          <Text style={styles.detailPrimary}>
+            {formatPaymentAmount(paymentPreview.amount, paymentPreview.currency)}
+          </Text>
+          <Text style={styles.detailSecondary}>{paymentPreview.methodLabel}</Text>
+        </DetailRow>
+
+        <Divider />
+
+        <DetailRow icon="bell" title="Reminder">
+          <Text style={styles.detailSecondary}>
+            You will receive a reminder before your appointment.
+          </Text>
+        </DetailRow>
+      </View>
+
+      <View style={styles.referenceCard}>
+        <View style={styles.referenceLeft}>
+          <View style={styles.referenceIconCircle}>
+            <PatientGlyph color={colors.info} name="bookmark" size={24} />
+          </View>
+          <View style={styles.referenceCopy}>
+            <Text style={styles.referenceTitle}>Reference Number</Text>
+            <Text style={styles.referenceValue}>{referenceNumber}</Text>
           </View>
         </View>
-      </Card>
-
-      <Card title="Appointment details">
-        <View style={styles.infoBox}>
-          <Info label="Date" value={appointment.appointmentDate} />
-          <Info
-            label="Time"
-            value={`${trimSeconds(appointment.startTime)} - ${trimSeconds(
-              appointment.endTime
-            )}`}
-          />
-          <Info
-            label="Location"
-            value={
-              appointment.location
-                ? formatLocation(appointment.location)
-                : "Location unavailable"
-            }
-          />
-          <Info
-            label="Reason for visit"
-            value={appointment.reasonForVisit || "No reason provided."}
-          />
-          {appointment.cancellationReason ? (
-            <Info label="Cancellation reason" value={appointment.cancellationReason} />
-          ) : null}
-        </View>
-
-        <View style={styles.actions}>
-          <Button
-            title={
-              appointment.isFavouriteDoctor
-                ? "Remove favourite doctor"
-                : "Add favourite doctor"
-            }
-            variant="secondary"
-            isLoading={favouriteMutation.isPending}
-            onPress={() =>
-              favouriteMutation.mutate({
-                doctorId: appointment.doctorId,
-                isFavourite: !appointment.isFavouriteDoctor
-              })
-            }
-          />
-          <Button
-            title="Directions / location"
-            variant="secondary"
-            onPress={() => openDirections(appointment)}
-          />
-          {canReschedule ? (
-            <Button
-              title="Reschedule"
-              variant="secondary"
-              onPress={() =>
-                Alert.alert(
-                  "Reschedule not available yet",
-                  "The backend is protected for rescheduling, but the reschedule flow is not implemented in this MVP."
-                )
-              }
-            />
-          ) : null}
-          {canCancel ? (
-            <Button
-              title="Cancel appointment"
-              variant="danger"
-              isLoading={cancelMutation.isPending}
-              onPress={() =>
-                Alert.alert(
-                  "Cancel appointment",
-                  "This will cancel your appointment and release the slot if it is still in the future.",
-                  [
-                    { text: "Keep appointment", style: "cancel" },
-                    {
-                      text: "Cancel appointment",
-                      style: "destructive",
-                      onPress: () => cancelMutation.mutate()
-                    }
-                  ]
-                )
-              }
-            />
-          ) : null}
-        </View>
-      </Card>
-
-      <Card title="Payment">
-        <View style={styles.infoBox}>
-          <Info
-            label="Consultation fee"
-            value={formatPaymentAmount(
-              paymentPreview.amount,
-              paymentPreview.currency
-            )}
-          />
-          <Info label="Payment method" value={paymentPreview.methodLabel} />
-          <Text style={styles.infoValue}>{paymentPreview.note}</Text>
-        </View>
-      </Card>
+      </View>
 
       {appointment.status === "completed" ? (
-        <Card
-          title={appointment.review ? "Your review" : "Review this appointment"}
-          subtitle={
-            appointment.review
-              ? "You already reviewed this completed appointment."
-              : "Only completed appointments can be reviewed. You can choose whether the written comment is public."
-          }
-        >
+        <View style={styles.reviewCard}>
+          <Text style={styles.reviewTitle}>
+            {appointment.review ? "Your review" : "Review this appointment"}
+          </Text>
+
           {appointment.review ? (
-            <View style={styles.reviewBox}>
+            <View style={styles.reviewSubmittedBox}>
               <Badge label={formatRating(appointment.review.rating)} variant="success" />
-              <Text style={styles.infoValue}>
+              <Text style={styles.detailSecondary}>
                 {appointment.review.comment || "No written comment."}
               </Text>
               <Badge
-                label={
-                  appointment.review.isPublic
-                    ? "Public comment"
-                    : "Private comment"
-                }
+                label={appointment.review.isPublic ? "Public comment" : "Private comment"}
                 variant={appointment.review.isPublic ? "success" : "neutral"}
               />
             </View>
           ) : (
-            <View style={styles.reviewBox}>
+            <View style={styles.reviewForm}>
               <FormInput
                 control={control}
                 error={errors.rating?.message}
@@ -356,8 +387,8 @@ export function PatientAppointmentDetailScreen() {
                 name="isPublic"
                 render={({ field: { onChange, value } }) => (
                   <View style={styles.visibilityBox}>
-                    <Text style={styles.infoLabel}>Comment visibility</Text>
-                    <View style={styles.actions}>
+                    <Text style={styles.visibilityLabel}>Comment visibility</Text>
+                    <View style={styles.visibilityActions}>
                       <Button
                         title="Public comment"
                         variant={value ? "primary" : "secondary"}
@@ -379,16 +410,77 @@ export function PatientAppointmentDetailScreen() {
               />
             </View>
           )}
-        </Card>
+        </View>
       ) : null}
 
-      <Button
-        title="Back to appointments"
-        variant="ghost"
-        onPress={() => router.push(ROUTES.patientAppointments)}
-      />
+      {canReschedule ? (
+        <Button
+          title="Reschedule"
+          onPress={() =>
+            Alert.alert(
+              "Reschedule not available yet",
+              "The backend is protected for rescheduling, but the reschedule flow is not implemented in this MVP."
+            )
+          }
+          style={styles.primaryAction}
+        />
+      ) : null}
+
+      {canCancel ? (
+        <Button
+          title="Cancel Appointment"
+          variant="secondary"
+          isLoading={cancelMutation.isPending}
+          onPress={() =>
+            Alert.alert(
+              "Cancel appointment",
+              "This will cancel your appointment and release the slot if it is still in the future.",
+              [
+                { text: "Keep appointment", style: "cancel" },
+                {
+                  text: "Cancel appointment",
+                  style: "destructive",
+                  onPress: () => cancelMutation.mutate()
+                }
+              ]
+            )
+          }
+        />
+      ) : (
+        <Button
+          title="Back to appointments"
+          variant="ghost"
+          onPress={() => router.push(ROUTES.patientAppointments)}
+        />
+      )}
     </Screen>
   );
+}
+
+function DetailRow({
+  children,
+  icon,
+  title
+}: {
+  children: React.ReactNode;
+  icon: "calendar" | "location" | "bookmark" | "shield" | "bell";
+  title: string;
+}) {
+  return (
+    <View style={styles.detailRow}>
+      <View style={styles.detailIconCircle}>
+        <PatientGlyph color={colors.info} name={icon} size={24} />
+      </View>
+      <View style={styles.detailCopy}>
+        <Text style={styles.detailTitle}>{title}</Text>
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function Divider() {
+  return <View style={styles.divider} />;
 }
 
 type FormInputProps = ComponentProps<typeof Input> & {
@@ -427,24 +519,6 @@ function FormInput({
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.infoItem}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
-    </View>
-  );
-}
-
-function formatLocation(
-  location: NonNullable<PatientAppointment["location"]>
-): string {
-  const label = location.name ?? location.city ?? "Practice location";
-  const details = [location.address, location.city].filter(Boolean).join(", ");
-
-  return details ? `${label} - ${details}` : label;
-}
-
 function openDirections(appointment: PatientAppointment) {
   const location = appointment.location;
 
@@ -472,6 +546,15 @@ function trimSeconds(value: string): string {
   return value.slice(0, 5);
 }
 
+function formatPrettyDate(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric"
+  }).format(new Date(`${value}T00:00:00`));
+}
+
 async function invalidatePatientData(
   queryClient: ReturnType<typeof useQueryClient>,
   appointmentId?: string
@@ -491,58 +574,226 @@ async function invalidatePatientData(
 }
 
 const styles = StyleSheet.create({
-  heroCard: {
-    backgroundColor: colors.primarySoft
-  },
-  heroHeader: {
-    alignItems: "flex-start",
-    flexDirection: "row",
+  content: {
     gap: spacing.lg
   },
-  heroCopy: {
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  headerSpacer: {
+    width: 52
+  },
+  pageTitle: {
+    color: "#0D2557",
+    fontSize: 32,
+    lineHeight: 38,
+    ...fontStyles.extraBold
+  },
+  statusBanner: {
+    flexDirection: "row",
+    gap: spacing.lg,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    borderWidth: 1
+  },
+  statusBannerSuccess: {
+    backgroundColor: "#F0FBF7",
+    borderColor: "#CFEFDB"
+  },
+  statusBannerDanger: {
+    backgroundColor: "#FFF4F2",
+    borderColor: "#F7D2CC"
+  },
+  statusIconCircle: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  statusIconCircleSuccess: {
+    backgroundColor: colors.success
+  },
+  statusIconCircleDanger: {
+    backgroundColor: colors.danger
+  },
+  statusIconText: {
+    color: colors.white,
+    fontSize: 18,
+    ...fontStyles.extraBold
+  },
+  statusCopy: {
     flex: 1,
     gap: spacing.sm
   },
-  title: {
-    color: colors.text,
-    fontSize: typography.title,
-    fontWeight: "900",
-    lineHeight: 34
+  statusTitle: {
+    fontSize: 18,
+    ...fontStyles.extraBold
   },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: typography.body,
-    lineHeight: 24
+  statusTitleSuccess: {
+    color: colors.success
   },
-  infoBox: {
-    gap: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: colors.background,
-    padding: spacing.md
+  statusTitleDanger: {
+    color: colors.danger
   },
-  infoItem: {
+  statusText: {
+    color: "#415877",
+    fontSize: 16,
+    lineHeight: 26,
+    ...fontStyles.regular
+  },
+  doctorCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.xl
+  },
+  doctorCopy: {
+    flex: 1,
     gap: spacing.xs
   },
-  infoLabel: {
-    color: colors.textMuted,
-    fontSize: typography.small,
-    fontWeight: "900",
-    textTransform: "uppercase"
+  doctorName: {
+    color: "#0D2557",
+    fontSize: 28,
+    lineHeight: 32,
+    ...fontStyles.extraBold
   },
-  infoValue: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "800",
-    lineHeight: 23
+  doctorSpecialty: {
+    color: "#415877",
+    fontSize: 18,
+    ...fontStyles.medium
   },
-  actions: {
-    gap: spacing.sm
+  verifiedText: {
+    color: "#256DDE",
+    fontSize: 17,
+    ...fontStyles.medium
   },
-  reviewBox: {
+  favouriteButton: {
+    minWidth: 86,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: "#D6E8FF",
+    backgroundColor: "#F8FBFF",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md
+  },
+  favouriteButtonText: {
+    color: "#256DDE",
+    fontSize: 15,
+    ...fontStyles.bold
+  },
+  detailsCard: {
+    gap: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.xl
+  },
+  detailRow: {
+    flexDirection: "row",
+    gap: spacing.lg
+  },
+  detailIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    backgroundColor: "#F5F9FF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  detailCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  detailTitle: {
+    color: "#102A35",
+    fontSize: 18,
+    ...fontStyles.bold
+  },
+  detailPrimary: {
+    color: "#0D2557",
+    fontSize: 17,
+    lineHeight: 24,
+    ...fontStyles.bold
+  },
+  detailSecondary: {
+    color: "#556E9B",
+    fontSize: 16,
+    lineHeight: 24,
+    ...fontStyles.regular
+  },
+  detailLink: {
+    color: colors.primary,
+    fontSize: 16,
+    ...fontStyles.bold
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#E8EFF7"
+  },
+  referenceCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.lg
+  },
+  referenceLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg
+  },
+  referenceIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: "#F5F9FF",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  referenceCopy: {
+    gap: spacing.xs
+  },
+  referenceTitle: {
+    color: "#102A35",
+    fontSize: 17,
+    ...fontStyles.bold
+  },
+  referenceValue: {
+    color: "#256DDE",
+    fontSize: 16,
+    ...fontStyles.medium
+  },
+  reviewCard: {
+    gap: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.xl
+  },
+  reviewTitle: {
+    color: "#0D2557",
+    fontSize: 22,
+    ...fontStyles.extraBold
+  },
+  reviewSubmittedBox: {
     gap: spacing.md,
     borderRadius: radius.md,
-    backgroundColor: colors.background,
-    padding: spacing.md
+    backgroundColor: "#F8FBFF",
+    padding: spacing.lg
+  },
+  reviewForm: {
+    gap: spacing.md
   },
   reviewInput: {
     minHeight: 120,
@@ -551,5 +802,16 @@ const styles = StyleSheet.create({
   },
   visibilityBox: {
     gap: spacing.sm
+  },
+  visibilityLabel: {
+    color: "#415877",
+    fontSize: typography.small,
+    ...fontStyles.semiBold
+  },
+  visibilityActions: {
+    gap: spacing.sm
+  },
+  primaryAction: {
+    minHeight: 68
   }
 });

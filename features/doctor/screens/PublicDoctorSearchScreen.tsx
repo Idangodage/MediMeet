@@ -1,29 +1,21 @@
 import { useMemo, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Link, type Href } from "expo-router";
+import { Link } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import { z } from "zod";
 
 import { Screen } from "@/components/Screen";
-import {
-  Avatar,
-  Badge,
-  Button,
-  Card,
-  EmptyState,
-  ErrorState,
-  Input,
-  LoadingState
-} from "@/components/ui";
+import { Avatar, EmptyState, ErrorState, LoadingState } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { colors, spacing, typography } from "@/constants/theme";
+import { colors, radius, spacing, typography } from "@/constants/theme";
+import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import {
-  formatConsultationType,
   getNextAvailableDate,
   listPublicDoctors,
-  type ConsultationType,
   type DoctorSearchFilters,
   type PublicDoctor
 } from "@/services/doctor.service";
@@ -38,20 +30,12 @@ const searchSchema = z.object({
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD.")
     .or(z.literal(""))
     .optional(),
-  minFee: z
-    .string()
-    .trim()
-    .regex(/^\d+(\.\d{1,2})?$/, "Enter a valid amount.")
-    .or(z.literal(""))
-    .optional(),
   maxFee: z
     .string()
     .trim()
     .regex(/^\d+(\.\d{1,2})?$/, "Enter a valid amount.")
     .or(z.literal(""))
-    .optional(),
-  verificationStatus: z.string().trim().optional(),
-  consultationType: z.string().trim().optional()
+    .optional()
 });
 
 type SearchFormValues = z.infer<typeof searchSchema>;
@@ -63,7 +47,6 @@ export function PublicDoctorSearchScreen() {
   const {
     control,
     handleSubmit,
-    reset,
     formState: { errors }
   } = useForm<SearchFormValues>({
     resolver: zodResolver(searchSchema),
@@ -72,10 +55,7 @@ export function PublicDoctorSearchScreen() {
       city: "",
       language: "",
       availabilityDate: "",
-      minFee: "",
-      maxFee: "",
-      verificationStatus: "approved",
-      consultationType: ""
+      maxFee: ""
     }
   });
   const doctorsQuery = useQuery({
@@ -89,70 +69,85 @@ export function PublicDoctorSearchScreen() {
       city: normalizeText(values.city),
       language: normalizeText(values.language),
       availabilityDate: normalizeText(values.availabilityDate),
-      minFee: normalizeNumber(values.minFee),
       maxFee: normalizeNumber(values.maxFee),
-      verificationStatus: values.verificationStatus === "approved" ? "approved" : undefined,
-      consultationType: normalizeConsultationType(values.consultationType)
+      verificationStatus: "approved"
     });
   });
 
   const activeFilterCount = useMemo(
-    () => Object.values(filters).filter((value) => value !== undefined).length,
+    () => Object.values(filters).filter((value) => value !== undefined).length - 1,
     [filters]
   );
 
   return (
-    <Screen>
-      <View style={styles.hero}>
-        <Badge label="Verified doctor directory" variant="primary" />
-        <Text style={styles.title}>Search verified doctors</Text>
-        <Text style={styles.subtitle}>
-          Filter by specialty, city, language, date, fee, verification, and
-          consultation type.
-        </Text>
-        <View style={styles.trustRow}>
-          <Badge label="Public verified profiles only" variant="success" />
-          <Badge label="No booking without patient login" variant="info" />
-        </View>
-        <View style={styles.actions}>
-          <Link href={ROUTES.guestHome} asChild>
-            <Button title="Guest home" variant="secondary" />
-          </Link>
-          <Link href={ROUTES.signIn} asChild>
-            <Button title="Sign in" variant="ghost" />
-          </Link>
-        </View>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <AuthBackButton />
+        <Text style={styles.title}>Find a doctor</Text>
+        <Pressable accessibilityRole="button" onPress={onSubmit} style={styles.filterButton}>
+          <PatientGlyph name="filter" color={colors.primary} />
+        </Pressable>
       </View>
 
-      <Card
-        title="Search filters"
-        subtitle={`${activeFilterCount} active filters. Refine results without exposing patient data.`}
-      >
-        <View style={styles.filterGrid}>
-          <SearchInput control={control} label="Specialty" name="specialty" placeholder="Cardiology" />
-          <SearchInput control={control} label="City / location" name="city" placeholder="Helsinki" />
-          <SearchInput control={control} label="Language" name="language" placeholder="English" />
-          <SearchInput control={control} error={errors.availabilityDate?.message} label="Availability date" name="availabilityDate" placeholder="YYYY-MM-DD" />
-          <SearchInput control={control} keyboardType="decimal-pad" label="Min fee" name="minFee" placeholder="50" />
-          <SearchInput control={control} keyboardType="decimal-pad" label="Max fee" name="maxFee" placeholder="250" />
-          <SearchInput control={control} label="Verification status" name="verificationStatus" placeholder="approved" />
-          <SearchInput control={control} label="Consultation type" name="consultationType" placeholder="in_person, video, phone" />
-        </View>
-        <View style={styles.actions}>
-          <Button title="Apply filters" onPress={onSubmit} />
-          <Button
-            title="Clear"
-            variant="secondary"
-            onPress={() => {
-              reset();
-              setFilters({ verificationStatus: "approved" });
-            }}
-          />
-        </View>
-      </Card>
+      <Controller
+        control={control}
+        name="specialty"
+        render={({ field: { onBlur, onChange, value } }) => (
+          <View style={styles.searchBar}>
+            <PatientGlyph name="search" color="#7B8F99" size={30} />
+            <TextInput
+              autoCapitalize="words"
+              onBlur={onBlur}
+              onChangeText={onChange}
+              placeholder="Search doctors, specialties..."
+              placeholderTextColor="#8093BC"
+              style={styles.searchInput}
+              value={value}
+            />
+          </View>
+        )}
+      />
+
+      <View style={styles.filterChipRow}>
+        <CompactFilterField
+          control={control}
+          name="city"
+          placeholder="Location"
+          icon="location"
+        />
+        <CompactFilterField
+          control={control}
+          name="availabilityDate"
+          placeholder="Available Today"
+          icon="calendar"
+        />
+        <CompactFilterField
+          control={control}
+          name="language"
+          placeholder="Language"
+          icon="globe"
+        />
+        <CompactFilterField
+          control={control}
+          name="maxFee"
+          placeholder="Fee"
+          icon="bookmark"
+          keyboardType="decimal-pad"
+        />
+      </View>
+
+      {errors.availabilityDate?.message || errors.maxFee?.message ? (
+        <Text style={styles.filterError}>
+          {errors.availabilityDate?.message ?? errors.maxFee?.message}
+        </Text>
+      ) : null}
+
+      {activeFilterCount > 0 ? (
+        <Text style={styles.filterSummary}>{activeFilterCount} active filters</Text>
+      ) : null}
 
       {doctorsQuery.isLoading ? (
-        <LoadingState message="Loading verified doctors..." />
+        <LoadingState message="Finding doctors for you..." />
       ) : null}
 
       {doctorsQuery.isError ? (
@@ -167,131 +162,121 @@ export function PublicDoctorSearchScreen() {
       ) : null}
 
       {doctorsQuery.isSuccess && doctorsQuery.data.length === 0 ? (
-        <Card>
+        <View style={styles.emptyCard}>
           <EmptyState
             title="No doctors match these filters"
-            message="Try widening the city, language, date, or fee filters."
+            message="Try widening the location, language, date, or fee filters."
           />
-        </Card>
-      ) : null}
-
-      {doctorsQuery.data?.length ? (
-        <View style={styles.resultHeader}>
-          <Text style={styles.resultTitle}>Available doctors</Text>
-          <Badge label={`${doctorsQuery.data.length} result${doctorsQuery.data.length === 1 ? "" : "s"}`} />
         </View>
       ) : null}
 
       {doctorsQuery.data?.map((doctor) => (
         <DoctorDiscoveryCard doctor={doctor} key={doctor.id} />
       ))}
+
+      <View style={styles.safetyStrip}>
+        <PatientGlyph name="shield" color={colors.primary} />
+        <Text style={styles.safetyText}>
+          All doctors are verified and background-checked. Your health is in safe hands.
+        </Text>
+      </View>
     </Screen>
   );
 }
 
 function DoctorDiscoveryCard({ doctor }: { doctor: PublicDoctor }) {
   const nextAvailableDate = getNextAvailableDate(doctor);
-  const primaryLocation = doctor.locations[0];
 
   return (
-    <Card style={styles.doctorCard}>
-      <View style={styles.doctorHeader}>
-        <Avatar
-          imageUrl={doctor.profileImageUrl}
-          name={doctor.fullName}
-          size={64}
-        />
-        <View style={styles.doctorIdentity}>
-          <Text style={styles.doctorName}>
-            {[doctor.title, doctor.fullName].filter(Boolean).join(" ")}
-          </Text>
-          <Text style={styles.doctorMeta}>
-            {doctor.specialties[0] ?? "General practice"}
+    <View style={styles.doctorCard}>
+      <View style={styles.doctorTopRow}>
+        <View style={styles.doctorMainInfo}>
+          <Avatar imageUrl={doctor.profileImageUrl} name={doctor.fullName} size={96} />
+          <View style={styles.doctorCopy}>
+            <Text style={styles.doctorName}>
+              {[doctor.title, doctor.fullName].filter(Boolean).join(" ")}
+            </Text>
+            <Text style={styles.doctorSpecialty}>
+              {doctor.specialties[0] ?? "General practice"}
+            </Text>
+            <Text style={styles.doctorMeta}>{summarizeQualifications(doctor)}</Text>
+            <Text style={styles.doctorMeta}>
+              {doctor.yearsOfExperience}+ years experience
+            </Text>
+            <Text style={styles.doctorRating}>
+              {doctor.averageRating.toFixed(1)} ({doctor.reviews.length} reviews)
+            </Text>
+          </View>
+        </View>
+        <View style={styles.verifiedRow}>
+          <PatientGlyph name="shield" color={colors.primary} size={20} />
+          <Text style={styles.verifiedText}>Verified</Text>
+        </View>
+      </View>
+
+      <View style={styles.metricsColumn}>
+        <View style={styles.metricPanel}>
+          <Text style={styles.metricValue}>${doctor.consultationFee.toFixed(0)}</Text>
+          <Text style={styles.metricLabel}>Consultation fee</Text>
+        </View>
+        <View style={styles.metricPanel}>
+          <Text style={styles.metricLabel}>Next available</Text>
+          <Text style={styles.metricValueSmall}>
+            {nextAvailableDate ? formatNextSlot(nextAvailableDate) : "No slots"}
           </Text>
         </View>
-        <Badge label="Verified doctor" variant="success" />
       </View>
 
-      <View style={styles.infoGrid}>
-        <Info label="Qualifications" value={summarize(doctor.qualifications)} />
-        <Info label="Experience" value={`${doctor.yearsOfExperience} years`} />
-        <Info
-          label="Location"
-          value={primaryLocation?.city ?? primaryLocation?.address ?? "Not listed"}
-        />
-        <Info label="Fee" value={`$${doctor.consultationFee.toFixed(2)}`} />
-        <Info
-          label="Next available"
-          value={nextAvailableDate ? formatDate(nextAvailableDate) : "No slots"}
-        />
-        <Info
-          label="Consultation"
-          value={
-            doctor.availableSlots[0]
-              ? formatConsultationType(doctor.availableSlots[0].consultationType)
-              : "Not listed"
-          }
-        />
+      <View style={styles.profileLinkRow}>
+        <Link href={`/doctors/${doctor.id}`} style={styles.profileLink}>
+          View profile {">"}
+        </Link>
       </View>
-
-      <Text style={styles.bio} numberOfLines={3}>
-        {doctor.biography ?? "No biography provided yet."}
-      </Text>
-
-      <View style={styles.cardTrustRow}>
-        <Badge label="Public profile reviewed" variant="primary" />
-        <Badge label="Pay at clinic" variant="neutral" />
-      </View>
-
-      <Link href={`/doctors/${doctor.id}` as Href} asChild>
-        <Button title="View profile" />
-      </Link>
-    </Card>
-  );
-}
-
-function Info({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.infoItem}>
-      <Text style={styles.infoLabel}>{label}</Text>
-      <Text style={styles.infoValue}>{value}</Text>
     </View>
   );
 }
 
-function SearchInput({
+function CompactFilterField({
   control,
-  error,
+  icon,
   keyboardType,
-  label,
   name,
   placeholder
 }: {
   control: ReturnType<typeof useForm<SearchFormValues>>["control"];
-  error?: string;
+  icon: "location" | "calendar" | "globe" | "bookmark";
   keyboardType?: "default" | "decimal-pad";
-  label: string;
   name: keyof SearchFormValues;
-  placeholder?: string;
+  placeholder: string;
 }) {
   return (
     <Controller
       control={control}
       name={name}
       render={({ field: { onBlur, onChange, value } }) => (
-        <Input
-          autoCapitalize="none"
-          error={error}
-          keyboardType={keyboardType}
-          label={label}
-          onBlur={onBlur}
-          onChangeText={onChange}
-          placeholder={placeholder}
-          value={value}
-        />
+        <View style={styles.filterChip}>
+          <PatientGlyph name={icon} color="#1A5C97" size={22} />
+          <TextInput
+            keyboardType={keyboardType}
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder={placeholder}
+            placeholderTextColor="#36507C"
+            style={styles.filterChipInput}
+            value={value}
+          />
+        </View>
       )}
     />
   );
+}
+
+function summarizeQualifications(doctor: PublicDoctor) {
+  if (doctor.qualifications.length === 0) {
+    return "Qualifications available on profile";
+  }
+
+  return doctor.qualifications.slice(0, 2).join(", ");
 }
 
 function normalizeText(value?: string): string | undefined {
@@ -310,131 +295,200 @@ function normalizeNumber(value?: string): number | undefined {
   return Number.isFinite(numberValue) ? numberValue : undefined;
 }
 
-function normalizeConsultationType(value?: string): ConsultationType | undefined {
-  const normalized = value?.trim();
-
-  if (
-    normalized === "in_person" ||
-    normalized === "video" ||
-    normalized === "phone"
-  ) {
-    return normalized;
-  }
-
-  return undefined;
-}
-
-function summarize(values: string[]): string {
-  if (values.length === 0) {
-    return "Not listed";
-  }
-
-  return values.slice(0, 2).join(", ");
-}
-
-function formatDate(value: string): string {
+function formatNextSlot(value: string) {
+  const date = new Date(value);
   return new Intl.DateTimeFormat(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short"
-  }).format(new Date(value));
+    weekday: "short",
+    hour: "numeric",
+    minute: "2-digit"
+  }).format(date);
 }
 
 const styles = StyleSheet.create({
-  hero: {
-    gap: spacing.md,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.primaryTint,
-    padding: spacing.xl
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xl
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
   },
   title: {
     color: colors.text,
-    fontSize: 32,
-    fontWeight: "900",
-    letterSpacing: -0.7,
-    lineHeight: 38
+    fontSize: 30,
+    lineHeight: 36,
+    ...fontStyles.extraBold
   },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: typography.body,
-    lineHeight: 24
-  },
-  actions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.md
-  },
-  filterGrid: {
-    gap: spacing.md
-  },
-  trustRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm
-  },
-  resultHeader: {
+  filterButton: {
+    width: 68,
+    height: 68,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#D6E8FF",
+    backgroundColor: colors.surface,
     alignItems: "center",
+    justifyContent: "center"
+  },
+  searchBar: {
+    minHeight: 76,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: "#D7E4FA",
+    backgroundColor: colors.surface,
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg
+  },
+  searchInput: {
+    flex: 1,
+    color: "#243F73",
+    fontSize: 18,
+    ...fontStyles.medium
+  },
+  filterChipRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
     gap: spacing.md
   },
-  resultTitle: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "900"
+  filterChip: {
+    minWidth: 150,
+    flex: 1,
+    height: 56,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#CDE7EF",
+    backgroundColor: "#F2FBFC",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md
+  },
+  filterChipInput: {
+    flex: 1,
+    color: "#163067",
+    fontSize: 16,
+    ...fontStyles.medium
+  },
+  filterError: {
+    color: colors.danger,
+    fontSize: typography.small,
+    ...fontStyles.semiBold
+  },
+  filterSummary: {
+    color: colors.primary,
+    fontSize: typography.small,
+    ...fontStyles.bold
+  },
+  emptyCard: {
+    borderRadius: 28,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E3EEF9"
   },
   doctorCard: {
+    borderRadius: 30,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    padding: spacing.xl,
+    gap: spacing.lg
+  },
+  doctorTopRow: {
     gap: spacing.md
   },
-  doctorHeader: {
-    alignItems: "center",
+  doctorMainInfo: {
     flexDirection: "row",
-    gap: spacing.md
+    gap: spacing.lg
   },
-  doctorIdentity: {
+  doctorCopy: {
     flex: 1,
     gap: spacing.xs
   },
   doctorName: {
-    color: colors.text,
-    fontSize: typography.subtitle,
-    fontWeight: "900"
+    color: "#12306A",
+    fontSize: 24,
+    lineHeight: 30,
+    ...fontStyles.extraBold
+  },
+  doctorSpecialty: {
+    color: "#344E79",
+    fontSize: 18,
+    ...fontStyles.medium
   },
   doctorMeta: {
-    color: colors.primaryDark,
-    fontSize: typography.body,
-    fontWeight: "800"
+    color: "#6C80AA",
+    fontSize: 16,
+    lineHeight: 22,
+    ...fontStyles.regular
   },
-  cardTrustRow: {
+  doctorRating: {
+    color: "#556E9B",
+    fontSize: 16,
+    ...fontStyles.medium
+  },
+  verifiedRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    alignItems: "center",
     gap: spacing.sm
   },
-  infoGrid: {
+  verifiedText: {
+    color: colors.primary,
+    fontSize: 16,
+    ...fontStyles.bold
+  },
+  metricsColumn: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: spacing.md
   },
-  infoItem: {
-    minWidth: "45%",
+  metricPanel: {
     flex: 1,
+    borderRadius: 22,
+    backgroundColor: "#F2FBFC",
+    padding: spacing.md,
     gap: spacing.xs
   },
-  infoLabel: {
-    color: colors.textMuted,
-    fontSize: typography.small,
-    fontWeight: "800",
-    textTransform: "uppercase"
+  metricLabel: {
+    color: "#6C80AA",
+    fontSize: 15,
+    ...fontStyles.regular
   },
-  infoValue: {
-    color: colors.text,
-    fontSize: typography.body,
-    fontWeight: "800"
+  metricValue: {
+    color: "#12306A",
+    fontSize: 28,
+    ...fontStyles.extraBold
   },
-  bio: {
-    color: colors.textMuted,
-    fontSize: typography.body,
-    lineHeight: 23
+  metricValueSmall: {
+    color: colors.primary,
+    fontSize: 18,
+    lineHeight: 24,
+    ...fontStyles.bold
+  },
+  profileLinkRow: {
+    borderTopWidth: 1,
+    borderTopColor: "#E3EEF9",
+    paddingTop: spacing.md,
+    alignItems: "flex-end"
+  },
+  profileLink: {
+    color: "#2D73E1",
+    fontSize: 18,
+    ...fontStyles.bold
+  },
+  safetyStrip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: "#E3EEF9",
+    paddingTop: spacing.md
+  },
+  safetyText: {
+    flex: 1,
+    color: "#315F72",
+    fontSize: 16,
+    lineHeight: 22,
+    ...fontStyles.medium
   }
 });

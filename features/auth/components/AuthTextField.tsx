@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -15,15 +16,19 @@ type AuthTextFieldProps = TextInputProps & {
   error?: string;
   label?: string;
   leftIcon: Parameters<typeof AuthGlyph>[0]["name"];
+  leftAdornment?: ReactNode;
   onRightIconPress?: () => void;
   rightIcon?: Parameters<typeof AuthGlyph>[0]["name"];
+  rightAdornment?: ReactNode;
 };
 
 export function AuthTextField({
   error,
   label,
+  leftAdornment,
   leftIcon,
   onRightIconPress,
+  rightAdornment,
   rightIcon,
   style,
   ...props
@@ -33,7 +38,7 @@ export function AuthTextField({
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={[styles.fieldShell, error ? styles.fieldShellError : null]}>
         <View style={styles.leftIconWrap}>
-          <AuthGlyph name={leftIcon} />
+          {leftAdornment ?? <AuthGlyph name={leftIcon} />}
         </View>
         <View style={styles.verticalLine} />
         <TextInput
@@ -49,7 +54,7 @@ export function AuthTextField({
             onPress={onRightIconPress}
             style={styles.rightIconWrap}
           >
-            <AuthGlyph name={rightIcon} />
+            {rightAdornment ?? <AuthGlyph name={rightIcon} />}
           </Pressable>
         ) : null}
       </View>

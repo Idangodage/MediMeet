@@ -14,9 +14,14 @@ import { Image, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Avatar, Badge, Button, Card, ErrorState, Input } from "@/components/ui";
+import { fontStyles } from "@/constants/fonts";
 import { ROUTES, getHomeRouteForRole } from "@/constants/routes";
 import { colors, spacing, typography } from "@/constants/theme";
+import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
+import { AuthTextField } from "@/features/auth/components/AuthTextField";
 import { useAuth } from "@/features/auth";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
   clinicAdminOnboardingSchema,
   doctorOnboardingSchema,
@@ -113,17 +118,42 @@ export function OnboardingScreen() {
 
   return (
     <Screen>
-      <View style={styles.header}>
-        <Text style={styles.brand}>MediMeet onboarding</Text>
-        <Text style={styles.title}>{getOnboardingTitle(role)}</Text>
-        <Text style={styles.subtitle}>
-          Complete these setup steps so MediMeet can route you to the right
-          private workspace.
-        </Text>
-      </View>
+      {role === "patient" ? (
+        <View style={styles.patientHero}>
+          <View style={styles.patientTopRow}>
+            <AuthBackButton onPress={() => router.back()} />
+          </View>
+          <View style={styles.patientHeroHeader}>
+            <PublicBrandLockup centered />
+            <Text style={styles.patientHeroTitle}>Complete your profile</Text>
+            <Text style={styles.patientHeroSubtitle}>
+              Set up your patient account
+            </Text>
+            <View style={styles.patientStepRow}>
+              <View style={styles.patientLine} />
+              <View style={styles.patientStepPill}>
+                <Text style={styles.patientStepPillText}>Step 1 of 1</Text>
+              </View>
+              <View style={styles.patientLine} />
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {role !== "patient" ? (
+        <View style={styles.header}>
+          <Text style={styles.brand}>MediMeet onboarding</Text>
+          <Text style={styles.title}>{getOnboardingTitle(role)}</Text>
+          <Text style={styles.subtitle}>
+            Complete these setup steps so MediMeet can route you to the right
+            private workspace.
+          </Text>
+        </View>
+      ) : null}
 
       {role === "patient" ? (
         <PatientOnboardingForm
+          avatarUrl={profile?.avatarUrl}
           defaultFullName={profile?.fullName ?? user?.user_metadata?.full_name}
           onComplete={async () => {
             await refreshProfile();
@@ -155,9 +185,11 @@ export function OnboardingScreen() {
 }
 
 function PatientOnboardingForm({
+  avatarUrl,
   defaultFullName,
   onComplete
 }: {
+  avatarUrl?: string | null;
   defaultFullName?: string | null;
   onComplete: () => Promise<void>;
 }) {
@@ -191,15 +223,140 @@ function PatientOnboardingForm({
   });
 
   return (
-    <Card title="Patient details" subtitle="Used for appointment communication.">
+    <View style={styles.patientFormShell}>
       {formError ? <ErrorState message={formError} /> : null}
-      <FormInput control={control} error={errors.fullName?.message} label="Full name" name="fullName" />
-      <FormInput control={control} error={errors.phone?.message} keyboardType="phone-pad" label="Phone" name="phone" />
-      <FormInput control={control} error={errors.city?.message} label="City" name="city" />
-      <FormInput control={control} error={errors.preferredLanguage?.message} label="Preferred language" name="preferredLanguage" />
-      <FormInput control={control} error={errors.dateOfBirth?.message} label="Date of birth optional" name="dateOfBirth" placeholder="YYYY-MM-DD" />
-      <Button title="Complete patient onboarding" isLoading={isSubmitting} onPress={onSubmit} />
-    </Card>
+      <View style={styles.patientAvatarSection}>
+        <View style={styles.patientAvatarWrap}>
+          <Avatar imageUrl={avatarUrl} name={defaultFullName} size={108} />
+          <View style={styles.patientAvatarBadge}>
+            <Text style={styles.patientAvatarBadgeText}>+</Text>
+          </View>
+        </View>
+        <Text style={styles.patientAvatarTitle}>Patient details</Text>
+        <Text style={styles.patientAvatarMeta}>
+          Add your core contact details for appointments.
+        </Text>
+      </View>
+
+      <Controller
+        control={control}
+        name="fullName"
+        render={({ field: { onBlur, onChange, value } }) => (
+          <AuthTextField
+            error={errors.fullName?.message}
+            label="Full Name"
+            leftAdornment={<PatientGlyph name="user" />}
+            leftIcon="user"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder="Enter your full name"
+            value={value}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="phone"
+        render={({ field: { onBlur, onChange, value } }) => (
+          <AuthTextField
+            error={errors.phone?.message}
+            keyboardType="phone-pad"
+            label="Phone Number"
+            leftAdornment={<PatientGlyph name="support" />}
+            leftIcon="phone"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder="(555) 123-4567"
+            value={value}
+          />
+        )}
+      />
+
+      <View style={styles.patientSplitRow}>
+        <View style={styles.patientSplitField}>
+          <Controller
+            control={control}
+            name="city"
+            render={({ field: { onBlur, onChange, value } }) => (
+              <AuthTextField
+                error={errors.city?.message}
+                label="City"
+                leftAdornment={<PatientGlyph name="location" />}
+                leftIcon="user"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                placeholder="Enter your city"
+                value={value}
+              />
+            )}
+          />
+        </View>
+        <View style={styles.patientSplitField}>
+          <Controller
+            control={control}
+            name="dateOfBirth"
+            render={({ field: { onBlur, onChange, value } }) => (
+              <AuthTextField
+                error={errors.dateOfBirth?.message}
+                label="Date of Birth"
+                leftAdornment={<PatientGlyph name="calendar" />}
+                leftIcon="user"
+                onBlur={onBlur}
+                onChangeText={onChange}
+                placeholder="YYYY-MM-DD"
+                value={value}
+              />
+            )}
+          />
+        </View>
+      </View>
+
+      <Controller
+        control={control}
+        name="preferredLanguage"
+        render={({ field: { onBlur, onChange, value } }) => (
+          <AuthTextField
+            error={errors.preferredLanguage?.message}
+            label="Preferred Language"
+            leftAdornment={<PatientGlyph name="globe" />}
+            leftIcon="user"
+            onBlur={onBlur}
+            onChangeText={onChange}
+            placeholder="English"
+            value={value}
+          />
+        )}
+      />
+
+      <View style={styles.patientInfoCard}>
+        <View style={styles.patientInfoIcon}>
+          <PatientGlyph name="bell" color={colors.primary} />
+        </View>
+        <View style={styles.patientInfoCopy}>
+          <Text style={styles.patientInfoTitle}>Stay updated about your health</Text>
+          <Text style={styles.patientInfoText}>
+            Appointment reminders and important updates will appear in your account.
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.patientPrivacyCard}>
+        <View style={styles.patientInfoIcon}>
+          <PatientGlyph name="shield" color={colors.primary} />
+        </View>
+        <Text style={styles.patientPrivacyText}>
+          Your privacy is our priority. Your information is encrypted and securely stored.
+        </Text>
+      </View>
+
+      <Button
+        title="Continue"
+        isLoading={isSubmitting}
+        onPress={onSubmit}
+        style={styles.patientContinueButton}
+      />
+    </View>
   );
 }
 
@@ -643,6 +800,154 @@ function getOnboardingIntro(
 const styles = StyleSheet.create({
   introContent: {
     justifyContent: "center"
+  },
+  patientHero: {
+    gap: spacing.lg
+  },
+  patientTopRow: {
+    alignItems: "flex-start"
+  },
+  patientHeroHeader: {
+    alignItems: "center",
+    gap: spacing.md
+  },
+  patientHeroTitle: {
+    color: colors.text,
+    fontSize: 34,
+    lineHeight: 40,
+    textAlign: "center",
+    ...fontStyles.extraBold
+  },
+  patientHeroSubtitle: {
+    color: colors.textMuted,
+    fontSize: 18,
+    lineHeight: 24,
+    textAlign: "center",
+    ...fontStyles.regular
+  },
+  patientStepRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md
+  },
+  patientLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: "#D9E4F7"
+  },
+  patientStepPill: {
+    borderRadius: 999,
+    backgroundColor: "#EAF8FA",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm
+  },
+  patientStepPillText: {
+    color: colors.primary,
+    fontSize: 18,
+    ...fontStyles.bold
+  },
+  patientFormShell: {
+    gap: spacing.lg
+  },
+  patientAvatarSection: {
+    alignItems: "center",
+    gap: spacing.sm
+  },
+  patientAvatarWrap: {
+    position: "relative",
+    padding: spacing.md,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "#9FE3E7",
+    borderStyle: "dashed",
+    backgroundColor: "#F2FBFC"
+  },
+  patientAvatarBadge: {
+    position: "absolute",
+    right: 6,
+    bottom: 8,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  patientAvatarBadgeText: {
+    color: colors.white,
+    fontSize: 24,
+    lineHeight: 24,
+    ...fontStyles.bold
+  },
+  patientAvatarTitle: {
+    color: colors.text,
+    fontSize: typography.subtitle,
+    ...fontStyles.bold
+  },
+  patientAvatarMeta: {
+    color: colors.textMuted,
+    fontSize: typography.body,
+    textAlign: "center",
+    ...fontStyles.regular
+  },
+  patientSplitRow: {
+    flexDirection: "row",
+    gap: spacing.md
+  },
+  patientSplitField: {
+    flex: 1
+  },
+  patientInfoCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    borderRadius: 24,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    padding: spacing.lg
+  },
+  patientInfoIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: "#ECF9FB",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  patientInfoCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  patientInfoTitle: {
+    color: colors.text,
+    fontSize: typography.body,
+    ...fontStyles.bold
+  },
+  patientInfoText: {
+    color: colors.textMuted,
+    fontSize: typography.body,
+    lineHeight: 22,
+    ...fontStyles.regular
+  },
+  patientPrivacyCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    borderRadius: 24,
+    backgroundColor: "#EEF6FF",
+    padding: spacing.lg
+  },
+  patientPrivacyText: {
+    flex: 1,
+    color: "#315F72",
+    fontSize: typography.body,
+    lineHeight: 24,
+    ...fontStyles.medium
+  },
+  patientContinueButton: {
+    minHeight: 72
   },
   introHero: {
     alignItems: "center",
