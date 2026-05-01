@@ -1,5 +1,5 @@
 import { Link } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/ui";
@@ -7,7 +7,6 @@ import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { colors, radius, spacing, typography } from "@/constants/theme";
 import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
-import { PublicHeroArtwork } from "@/features/public/components/PublicHeroArtwork";
 
 export function WelcomeScreen() {
   return (
@@ -34,7 +33,13 @@ export function WelcomeScreen() {
           </View>
         </View>
 
-        <PublicHeroArtwork />
+        <View style={styles.heroImageWrap}>
+          <Image
+            source={require("@/assets/branding/welcome-hero.png")}
+            style={styles.heroImage}
+            resizeMode="contain"
+          />
+        </View>
 
         <View style={styles.actions}>
           <Link href={ROUTES.landing} asChild>
@@ -100,6 +105,20 @@ const styles = StyleSheet.create({
     color: "#31558C",
     fontSize: typography.small,
     ...fontStyles.bold
+  },
+  heroImageWrap: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 240,
+    borderRadius: 32,
+    backgroundColor: "#F7FBFF",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.lg
+  },
+  heroImage: {
+    width: "100%",
+    maxWidth: 520,
+    height: 220
   },
   actions: {
     gap: spacing.sm
