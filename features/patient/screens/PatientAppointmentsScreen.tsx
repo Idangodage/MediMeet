@@ -7,7 +7,7 @@ import { Screen } from "@/components/Screen";
 import { Avatar, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
@@ -61,7 +61,12 @@ export function PatientAppointmentsScreen() {
       </View>
 
       <View style={styles.header}>
-        <Text style={styles.title}>My Appointments</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>My Appointments</Text>
+          <View style={styles.titleIconWrap}>
+            <PatientGlyph color={colors.primary} name="calendar" size={28} />
+          </View>
+        </View>
       </View>
 
       <View style={styles.filterBar}>
@@ -368,7 +373,8 @@ function formatPrettyDate(value: string): string {
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.lg
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
   },
   topRow: {
     flexDirection: "row",
@@ -384,7 +390,8 @@ const styles = StyleSheet.create({
     borderColor: "#E1ECF8",
     alignItems: "center",
     justifyContent: "center",
-    position: "relative"
+    position: "relative",
+    ...shadows.soft
   },
   bellDot: {
     position: "absolute",
@@ -398,11 +405,26 @@ const styles = StyleSheet.create({
   header: {
     gap: spacing.sm
   },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
   title: {
     color: "#0D2557",
     fontSize: 34,
     lineHeight: 40,
     ...fontStyles.extraBold
+  },
+  titleIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F2FBFC",
+    borderWidth: 1,
+    borderColor: "#D7EEF2"
   },
   filterBar: {
     flexDirection: "row",
@@ -410,7 +432,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: "#E3EEF9",
-    padding: spacing.xs
+    padding: spacing.xs,
+    ...shadows.soft
   },
   filterChip: {
     flex: 1,
@@ -437,7 +460,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#CDE7EF",
     backgroundColor: "#F5FCFC",
-    padding: spacing.xl
+    padding: spacing.xl,
+    ...shadows.card
   },
   featuredHeaderRow: {
     flexDirection: "row",
@@ -584,7 +608,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.lg
+    padding: spacing.lg,
+    ...shadows.soft
   },
   compactTopRow: {
     flexDirection: "row",
@@ -636,7 +661,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E3EEF9"
+    borderColor: "#E3EEF9",
+    ...shadows.soft
   },
   bottomNav: {
     flexDirection: "row",
@@ -646,7 +672,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E3EEF9"
+    borderColor: "#E3EEF9",
+    paddingHorizontal: spacing.sm,
+    ...shadows.card
   },
   bottomNavItem: {
     alignItems: "center",

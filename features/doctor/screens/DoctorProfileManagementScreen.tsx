@@ -10,7 +10,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
-import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import {
@@ -24,7 +24,9 @@ import {
   LoadingState
 } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
   doctorLocationSchema,
   doctorProfileSchema,
@@ -169,21 +171,63 @@ function DoctorProfileEditor({
   });
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.topRow}>
+        <PublicBrandLockup />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(ROUTES.notifications)}
+          style={styles.bellButton}
+        >
+          <PatientGlyph name="bell" color="#0F2C66" />
+          <View style={styles.bellDot} />
+        </Pressable>
+      </View>
+
       <View style={styles.header}>
         <View style={styles.headerCopy}>
-          <Text style={styles.eyebrow}>Doctor profile</Text>
-          <Text style={styles.title}>Manage your public presence</Text>
+          <Text style={styles.title}>Profile & Settings</Text>
           <Text style={styles.subtitle}>
-            Complete every required section before requesting or maintaining
-            verification. Unverified profiles stay hidden from public search unless
-            platform policy changes.
+            Manage your professional profile and practice details.
           </Text>
         </View>
-        <Badge
-          label={formatDoctorProfileStatus(completion.status)}
-          variant={getStatusBadgeVariant(completion.status)}
-        />
+      </View>
+
+      <View style={styles.profileSummaryCard}>
+        <View style={styles.profileSummaryHeader}>
+          <View style={styles.profileSummaryIdentity}>
+            <View style={styles.summaryAvatarWrap}>
+              {profile.profileImageUrl ? (
+                <Image source={{ uri: profile.profileImageUrl }} style={styles.summaryAvatar} />
+              ) : (
+                <Avatar name={profile.fullName} size={112} />
+              )}
+              <View style={styles.summaryCameraBadge}>
+                <Text style={styles.summaryCameraText}>+</Text>
+              </View>
+            </View>
+            <View style={styles.summaryCopy}>
+              <View style={styles.summaryNameRow}>
+                <Text style={styles.summaryName}>{profile.fullName}</Text>
+                <Badge
+                  label={formatDoctorProfileStatus(completion.status)}
+                  variant={getStatusBadgeVariant(completion.status)}
+                />
+              </View>
+              <Text style={styles.summaryMeta}>
+                {profile.title ?? "Doctor"} {profile.specialties[0] ? `- ${profile.specialties[0]}` : ""}
+              </Text>
+              <Text style={styles.summaryMeta}>
+                {profile.locations[0]?.name ?? "Practice details available below"}
+              </Text>
+            </View>
+          </View>
+          <Button
+            title="Preview"
+            variant="secondary"
+            onPress={() => router.push(ROUTES.doctorProfilePreview)}
+          />
+        </View>
       </View>
 
       <ProfileCompletionCard completionStatus={completion.status} profile={profile} />
@@ -501,27 +545,118 @@ function getStatusBadgeVariant(status: DoctorProfileStatus) {
 }
 
 const styles = StyleSheet.create({
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
+  },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  bellButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E1ECF8",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    ...shadows.soft
+  },
+  bellDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary
+  },
   header: {
     gap: spacing.md
   },
   headerCopy: {
     gap: spacing.sm
   },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: "900",
-    textTransform: "uppercase"
-  },
   title: {
     color: colors.text,
-    fontSize: typography.title,
+    fontSize: 34,
     fontWeight: "900",
-    lineHeight: 34
+    lineHeight: 40
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: typography.body,
+    fontSize: 18,
+    lineHeight: 24
+  },
+  profileSummaryCard: {
+    gap: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
+    ...shadows.card
+  },
+  profileSummaryHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: spacing.lg
+  },
+  profileSummaryIdentity: {
+    flexDirection: "row",
+    gap: spacing.lg,
+    flex: 1
+  },
+  summaryAvatarWrap: {
+    position: "relative"
+  },
+  summaryAvatar: {
+    width: 112,
+    height: 112,
+    borderRadius: 56,
+    backgroundColor: colors.surfaceMuted
+  },
+  summaryCameraBadge: {
+    position: "absolute",
+    right: -4,
+    bottom: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary,
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  summaryCameraText: {
+    color: colors.white,
+    fontSize: 22,
+    fontWeight: "900"
+  },
+  summaryCopy: {
+    flex: 1,
+    justifyContent: "center",
+    gap: spacing.sm
+  },
+  summaryNameRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    flexWrap: "wrap"
+  },
+  summaryName: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: "900",
+    lineHeight: 32
+  },
+  summaryMeta: {
+    color: colors.textMuted,
+    fontSize: 17,
     lineHeight: 24
   },
   photoRow: {

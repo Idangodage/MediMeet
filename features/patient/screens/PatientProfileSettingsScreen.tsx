@@ -9,7 +9,7 @@ import { Screen } from "@/components/Screen";
 import { Avatar, Button, ErrorState, Input, LoadingState } from "@/components/ui";
 import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 import { useAuth } from "@/features/auth";
 import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
@@ -363,7 +363,8 @@ function BottomNavItem({
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.lg
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
   },
   topRow: {
     flexDirection: "row",
@@ -379,7 +380,8 @@ const styles = StyleSheet.create({
     borderColor: "#E1ECF8",
     alignItems: "center",
     justifyContent: "center",
-    position: "relative"
+    position: "relative",
+    ...shadows.soft
   },
   bellDot: {
     position: "absolute",
@@ -402,7 +404,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.xl
+    padding: spacing.xl,
+    ...shadows.card
   },
   profileHeader: {
     flexDirection: "row",
@@ -499,14 +502,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.xl
+    padding: spacing.xl,
+    ...shadows.soft
   },
   menuCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    overflow: "hidden"
+    overflow: "hidden",
+    ...shadows.card
   },
   settingsRow: {
     flexDirection: "row",
@@ -519,7 +524,7 @@ const styles = StyleSheet.create({
     width: 58,
     height: 58,
     borderRadius: 20,
-    backgroundColor: "#F5F9FF",
+    backgroundColor: "#F4FAFF",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -558,7 +563,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E3EEF9"
+    borderColor: "#E3EEF9",
+    paddingHorizontal: spacing.sm,
+    ...shadows.card
   },
   bottomNavItem: {
     alignItems: "center",

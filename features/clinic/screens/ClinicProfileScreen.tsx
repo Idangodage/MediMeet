@@ -4,7 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useState } from "react";
 import { Controller, useForm, type Control, type FieldValues, type Path } from "react-hook-form";
-import { Alert, Image, StyleSheet, Text, View } from "react-native";
+import { Alert, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import {
@@ -16,7 +16,10 @@ import {
   LoadingState
 } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
+import { useAuth } from "@/features/auth";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
   clinicLocationSchema,
   clinicProfileSchema,
@@ -85,6 +88,7 @@ function ClinicProfileEditor({
   locations: ClinicLocation[];
   onRefresh: () => Promise<void>;
 }) {
+  const { signOut } = useAuth();
   const [formError, setFormError] = useState<string | null>(null);
   const {
     control,
@@ -145,16 +149,114 @@ function ClinicProfileEditor({
   });
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.topRow}>
+        <PublicBrandLockup />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(ROUTES.notifications)}
+          style={styles.bellButton}
+        >
+          <PatientGlyph name="bell" color="#0F2C66" />
+          <View style={styles.bellDot} />
+        </Pressable>
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>Clinic profile</Text>
         <Text style={styles.title}>
-          {clinic ? "Manage clinic details" : "Create clinic profile"}
+          {clinic ? "Clinic Profile & Settings" : "Set up your clinic profile"}
         </Text>
         <Text style={styles.subtitle}>
-          Clinic admins can manage only the clinic linked to their active admin
-          membership.
+          {clinic
+            ? "Manage your clinic details, locations, and settings."
+            : "Create a professional clinic presence for patients and doctors."}
         </Text>
+      </View>
+
+      {clinic ? (
+        <View style={styles.summaryCard}>
+          <View style={styles.summaryHeader}>
+            <View style={styles.summaryIdentity}>
+              {logoUri || clinic.logoUrl ? (
+                <Image source={{ uri: logoUri ?? clinic.logoUrl ?? "" }} style={styles.summaryLogo} />
+              ) : (
+                <View style={styles.summaryLogoFallback}>
+                  <Text style={styles.logoText}>
+                    {(clinic.name ?? "Clinic").slice(0, 2).toUpperCase()}
+                  </Text>
+                </View>
+              )}
+              <View style={styles.summaryCopy}>
+                <Text style={styles.summaryTitle}>{clinic.name}</Text>
+                <Text style={styles.summaryMeta}>{clinic.email ?? "Clinic email"}</Text>
+                <Text style={styles.summaryMeta}>{clinic.phone ?? "Clinic phone"}</Text>
+              </View>
+            </View>
+            <Button
+              title="Edit"
+              variant="secondary"
+              onPress={() =>
+                Alert.alert(
+                  "Edit clinic profile",
+                  "Update the clinic details below and save your changes."
+                )
+              }
+            />
+          </View>
+          <View style={styles.summaryFooter}>
+            <View style={styles.planPill}>
+              <PatientGlyph name="shield" color={colors.primary} size={18} />
+              <Text style={styles.planPillText}>Clinic workspace</Text>
+            </View>
+            <Text style={styles.summaryMeta}>
+              {locations.length} location{locations.length === 1 ? "" : "s"}
+            </Text>
+          </View>
+        </View>
+      ) : null}
+
+      <View style={styles.menuCard}>
+        <SettingsShortcut
+          description="View and update your clinic information."
+          icon="bookmark"
+          label="Clinic Details"
+          onPress={() =>
+            Alert.alert(
+              "Clinic details",
+              "Use the clinic details form below to update your clinic profile."
+            )
+          }
+        />
+        <SettingsShortcut
+          description="Manage connected doctors and staff access."
+          icon="user"
+          label="Doctors & Staff"
+          onPress={() => router.push(ROUTES.clinicDoctors)}
+        />
+        <SettingsShortcut
+          description="Manage clinic locations and opening hours."
+          icon="location"
+          label="Locations & Hours"
+          onPress={() =>
+            Alert.alert(
+              "Locations & hours",
+              "Use the location manager below to add or edit clinic branches."
+            )
+          }
+        />
+        <SettingsShortcut
+          description="Manage subscriptions, payments, and receipts."
+          icon="shield"
+          label="Billing & Receipts"
+          onPress={() => router.push(ROUTES.clinicBilling)}
+        />
+        <SettingsShortcut
+          danger
+          description="Sign out of your clinic admin account."
+          icon="support"
+          label="Log Out"
+          onPress={() => void signOut()}
+        />
       </View>
 
       <Card title="Clinic details" subtitle="These fields appear in clinic operations.">
@@ -191,11 +293,34 @@ function ClinicProfileEditor({
 
       <ClinicLocationsManager locations={locations} onRefresh={onRefresh} />
 
-      <Button
-        title="Back to clinic dashboard"
-        variant="ghost"
-        onPress={() => router.push(ROUTES.clinicHome)}
-      />
+      <View style={styles.bottomNav}>
+        <BottomNavItem
+          icon="home"
+          label="Dashboard"
+          onPress={() => router.push(ROUTES.clinicHome)}
+        />
+        <BottomNavItem
+          icon="user"
+          label="Doctors"
+          onPress={() => router.push(ROUTES.clinicDoctors)}
+        />
+        <BottomNavItem
+          icon="location"
+          label="Locations"
+          onPress={() => router.push(ROUTES.clinicProfile)}
+        />
+        <BottomNavItem
+          icon="calendar"
+          label="Appointments"
+          onPress={() => router.push(ROUTES.clinicAppointments)}
+        />
+        <BottomNavItem
+          active
+          icon="shield"
+          label="Profile"
+          onPress={() => router.push(ROUTES.clinicProfile)}
+        />
+      </View>
     </Screen>
   );
 }
@@ -342,25 +467,227 @@ function getEmptyLocationForm(): ClinicLocationFormValues {
   };
 }
 
+function SettingsShortcut({
+  danger = false,
+  description,
+  icon,
+  label,
+  onPress
+}: {
+  danger?: boolean;
+  description: string;
+  icon: "bookmark" | "location" | "shield" | "support" | "user";
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.menuRow}>
+      <View style={[styles.menuIconWrap, danger ? styles.menuIconDanger : null]}>
+        <PatientGlyph
+          color={danger ? "#D33C32" : colors.primary}
+          name={icon}
+          size={22}
+        />
+      </View>
+      <View style={styles.menuCopy}>
+        <Text style={[styles.menuLabel, danger ? styles.menuLabelDanger : null]}>
+          {label}
+        </Text>
+        <Text style={styles.menuDescription}>{description}</Text>
+      </View>
+      <Text style={styles.menuArrow}>›</Text>
+    </Pressable>
+  );
+}
+
+function BottomNavItem({
+  active = false,
+  icon,
+  label,
+  onPress
+}: {
+  active?: boolean;
+  icon: "home" | "user" | "location" | "calendar" | "shield";
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.bottomNavItem}>
+      <PatientGlyph color={active ? colors.primary : "#6B7FA8"} name={icon} size={26} />
+      <Text style={[styles.bottomNavLabel, active ? styles.bottomNavLabelActive : null]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
+  },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  bellButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E1ECF8",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    ...shadows.soft
+  },
+  bellDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary
+  },
   header: {
     gap: spacing.sm
   },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: "900",
-    textTransform: "uppercase"
-  },
   title: {
     color: colors.text,
-    fontSize: typography.title,
-    fontWeight: "900"
+    fontSize: 34,
+    fontWeight: "900",
+    lineHeight: 40
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: typography.body,
+    fontSize: 18,
     lineHeight: 24
+  },
+  summaryCard: {
+    gap: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
+    ...shadows.card
+  },
+  summaryHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: spacing.lg
+  },
+  summaryIdentity: {
+    flexDirection: "row",
+    gap: spacing.lg,
+    flex: 1
+  },
+  summaryLogo: {
+    width: 112,
+    height: 112,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surfaceMuted
+  },
+  summaryLogoFallback: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 112,
+    height: 112,
+    borderRadius: radius.xl,
+    backgroundColor: colors.primarySoft
+  },
+  summaryCopy: {
+    flex: 1,
+    gap: spacing.sm,
+    justifyContent: "center"
+  },
+  summaryTitle: {
+    color: colors.text,
+    fontSize: 28,
+    fontWeight: "900",
+    lineHeight: 32
+  },
+  summaryMeta: {
+    color: colors.textMuted,
+    fontSize: 17,
+    lineHeight: 24
+  },
+  summaryFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderTopWidth: 1,
+    borderTopColor: "#E8EFF7",
+    paddingTop: spacing.lg
+  },
+  planPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: "#EAF8FA",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm
+  },
+  planPillText: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: "700"
+  },
+  menuCard: {
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    overflow: "hidden",
+    ...shadows.card
+  },
+  menuRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E8EFF7"
+  },
+  menuIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    backgroundColor: "#EEF8FB",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  menuIconDanger: {
+    backgroundColor: "#FFF1F0"
+  },
+  menuCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  menuLabel: {
+    color: colors.text,
+    fontSize: typography.body,
+    fontWeight: "900"
+  },
+  menuLabelDanger: {
+    color: "#D33C32"
+  },
+  menuDescription: {
+    color: colors.textMuted,
+    fontSize: typography.body,
+    lineHeight: 22
+  },
+  menuArrow: {
+    color: "#6B7FA8",
+    fontSize: 28,
+    lineHeight: 28,
+    marginTop: -2
   },
   logoRow: {
     alignItems: "center",
@@ -426,5 +753,29 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     gap: spacing.sm
+  },
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    minHeight: 92,
+    borderRadius: 30,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    paddingHorizontal: spacing.sm,
+    ...shadows.card
+  },
+  bottomNavItem: {
+    alignItems: "center",
+    gap: spacing.sm
+  },
+  bottomNavLabel: {
+    color: "#6B7FA8",
+    fontSize: 14,
+    fontWeight: "500"
+  },
+  bottomNavLabelActive: {
+    color: colors.primary
   }
 });

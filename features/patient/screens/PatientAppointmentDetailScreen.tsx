@@ -24,7 +24,7 @@ import {
 } from "@/components/ui";
 import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
 import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import {
@@ -218,9 +218,11 @@ export function PatientAppointmentDetailScreen() {
               : styles.statusIconCircleSuccess
           ]}
         >
-          <Text style={styles.statusIconText}>
-            {isCancelledAppointment(appointment) ? "!" : "OK"}
-          </Text>
+          <PatientGlyph
+            color={colors.white}
+            name={isCancelledAppointment(appointment) ? "support" : "shield"}
+            size={30}
+          />
         </View>
         <View style={styles.statusCopy}>
           <Text
@@ -575,7 +577,8 @@ async function invalidatePatientData(
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.lg
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
   },
   headerRow: {
     flexDirection: "row",
@@ -596,7 +599,8 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
     borderRadius: radius.lg,
     padding: spacing.xl,
-    borderWidth: 1
+    borderWidth: 1,
+    ...shadows.soft
   },
   statusBannerSuccess: {
     backgroundColor: "#F0FBF7",
@@ -652,7 +656,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.xl
+    padding: spacing.xl,
+    ...shadows.card
   },
   doctorCopy: {
     flex: 1,
@@ -675,8 +680,8 @@ const styles = StyleSheet.create({
     ...fontStyles.medium
   },
   favouriteButton: {
-    minWidth: 86,
-    borderRadius: radius.full,
+    minWidth: 90,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: "#D6E8FF",
     backgroundColor: "#F8FBFF",
@@ -696,7 +701,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.xl
+    padding: spacing.xl,
+    ...shadows.card
   },
   detailRow: {
     flexDirection: "row",
@@ -745,7 +751,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.lg
+    padding: spacing.lg,
+    ...shadows.soft
   },
   referenceLeft: {
     flexDirection: "row",
@@ -779,7 +786,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.xl
+    padding: spacing.xl,
+    ...shadows.soft
   },
   reviewTitle: {
     color: "#0D2557",

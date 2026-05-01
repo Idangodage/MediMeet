@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import {
+  Avatar,
   Badge,
   Button,
   Card,
@@ -13,7 +14,9 @@ import {
   LoadingState
 } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
   formatDoctorAppointmentDateTime,
   formatDoctorAppointmentStatus,
@@ -66,15 +69,27 @@ export function DoctorAppointmentsDashboardScreen() {
 
     return getFilteredAppointments(dashboardQuery.data, activeFilter);
   }, [activeFilter, dashboardQuery.data]);
+  const featuredAppointment =
+    dashboardQuery.data?.today[0] ?? dashboardQuery.data?.upcoming[0] ?? null;
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.topRow}>
+        <PublicBrandLockup />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(ROUTES.notifications)}
+          style={styles.bellButton}
+        >
+          <PatientGlyph name="bell" color="#0F2C66" />
+          <View style={styles.bellDot} />
+        </Pressable>
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>Doctor appointments</Text>
-        <Text style={styles.title}>Appointment dashboard</Text>
+        <Text style={styles.title}>Appointments</Text>
         <Text style={styles.subtitle}>
-          Manage booked patients, requested appointments, completed visits,
-          cancellations, and no-shows from your doctor scope only.
+          Manage your booked patients, visit flow, and outcomes.
         </Text>
       </View>
 
@@ -122,6 +137,43 @@ export function DoctorAppointmentsDashboardScreen() {
               ))}
             </View>
           </Card>
+
+          {featuredAppointment ? (
+            <View style={styles.featuredCard}>
+              <View style={styles.featuredHeader}>
+                <Text style={styles.featuredEyebrow}>Next Appointment</Text>
+                <Badge label={getFeaturedTimingLabel(featuredAppointment)} variant="success" />
+              </View>
+              <View style={styles.featuredBody}>
+                <Avatar
+                  name={featuredAppointment.patient?.fullName ?? "Patient"}
+                  size={78}
+                />
+                <View style={styles.featuredCopy}>
+                  <Text style={styles.featuredName}>
+                    {featuredAppointment.patient?.fullName ?? "Patient"}
+                  </Text>
+                  <Text style={styles.featuredReason}>
+                    {featuredAppointment.reasonForVisit || "Consultation"}
+                  </Text>
+                  <Text style={styles.featuredMeta}>
+                    {trimAppointmentTime(featuredAppointment.startTime)} |{" "}
+                    {formatDoctorLocation(featuredAppointment.location)}
+                  </Text>
+                </View>
+                <Button
+                  title="View Details"
+                  variant="secondary"
+                  onPress={() =>
+                    router.push({
+                      pathname: "/doctor/appointments/[appointmentId]",
+                      params: { appointmentId: featuredAppointment.id }
+                    })
+                  }
+                />
+              </View>
+            </View>
+          ) : null}
 
           {appointments.length > 0 ? (
             <View style={styles.list}>
@@ -355,37 +407,111 @@ function formatFilterLabel(filter: AppointmentFilter): string {
   return filter.charAt(0).toUpperCase() + filter.slice(1);
 }
 
+function getFeaturedTimingLabel(appointment: DoctorAppointment): string {
+  if (appointment.status === "completed") {
+    return "Completed";
+  }
+
+  if (isCancelledDoctorAppointment(appointment)) {
+    return "Cancelled";
+  }
+
+  return "Upcoming";
+}
+
 const styles = StyleSheet.create({
-  header: {
-    gap: spacing.sm,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.primaryTint,
-    padding: spacing.xl
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
   },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: "900",
-    textTransform: "uppercase"
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  bellButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E1ECF8",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    ...shadows.soft
+  },
+  bellDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary
+  },
+  header: {
+    gap: spacing.sm
   },
   title: {
     color: colors.text,
-    fontSize: typography.title,
+    fontSize: 34,
     fontWeight: "900",
     letterSpacing: -0.5,
-    lineHeight: 34
+    lineHeight: 40
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: typography.body,
+    fontSize: 18,
     lineHeight: 24
   },
   filterRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: spacing.sm
+  },
+  featuredCard: {
+    gap: spacing.lg,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#BEEDEE",
+    backgroundColor: "#F5FCFC",
+    padding: spacing.xl,
+    ...shadows.soft
+  },
+  featuredHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  featuredEyebrow: {
+    color: colors.primary,
+    fontSize: 18,
+    fontWeight: "700"
+  },
+  featuredBody: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg
+  },
+  featuredCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  featuredName: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: "900"
+  },
+  featuredReason: {
+    color: "#415877",
+    fontSize: 18,
+    fontWeight: "500"
+  },
+  featuredMeta: {
+    color: "#556E9B",
+    fontSize: 16,
+    lineHeight: 22
   },
   statsRow: {
     flexDirection: "row",

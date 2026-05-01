@@ -20,7 +20,7 @@ import {
 } from "@/components/ui";
 import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
 import { useAuth } from "@/features/auth";
 import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
@@ -379,7 +379,8 @@ function formatTime(value: string): string {
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.lg
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
   },
   topBar: {
     flexDirection: "row",
@@ -400,7 +401,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E3EEF9"
+    borderColor: "#E3EEF9",
+    ...shadows.soft
   },
   availablePill: {
     position: "absolute",
@@ -412,7 +414,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     backgroundColor: colors.surface,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.sm,
+    ...shadows.soft
   },
   availableDot: {
     width: 10,
@@ -483,7 +486,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.lg
+    padding: spacing.lg,
+    ...shadows.card
   },
   infoHeader: {
     flexDirection: "row",

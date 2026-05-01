@@ -1,9 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import { Alert, Linking, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import {
+  Avatar,
   Badge,
   Button,
   Card,
@@ -12,7 +13,9 @@ import {
   LoadingState
 } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
+import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import {
   canCancelDoctorAppointment,
   canCompleteDoctorAppointment,
@@ -143,7 +146,15 @@ export function DoctorAppointmentDetailScreen() {
   }
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.headerRow}>
+        <AuthBackButton onPress={() => router.back()} />
+        <Text style={styles.pageTitle}>Appointment details</Text>
+        <Pressable accessibilityRole="button" style={styles.shareButton}>
+          <PatientGlyph name="bookmark" color="#0F2C66" size={22} />
+        </Pressable>
+      </View>
+
       <Card style={styles.heroCard}>
         <View style={styles.heroHeader}>
           <View style={styles.heroCopy}>
@@ -158,6 +169,23 @@ export function DoctorAppointmentDetailScreen() {
               {formatDoctorAppointmentDateTime(appointment)}
             </Text>
           </View>
+        </View>
+      </Card>
+
+      <Card title="Doctor profile">
+        <View style={styles.doctorCard}>
+          <Avatar name="Doctor" size={84} />
+          <View style={styles.doctorCardCopy}>
+            <Text style={styles.doctorCardTitle}>Your consultation workspace</Text>
+            <Text style={styles.bodyText}>
+              {formatDoctorLocation(appointment.location)}
+            </Text>
+          </View>
+          <Button
+            title="Directions"
+            variant="secondary"
+            onPress={() => openDirections(appointment)}
+          />
         </View>
       </Card>
 
@@ -520,8 +548,35 @@ function formatSlotRange(slot: DoctorRescheduleSlot): string {
 }
 
 const styles = StyleSheet.create({
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
+  },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  pageTitle: {
+    color: colors.text,
+    fontSize: 32,
+    fontWeight: "900",
+    lineHeight: 38
+  },
+  shareButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E1ECF8",
+    backgroundColor: colors.surface,
+    alignItems: "center",
+    justifyContent: "center",
+    ...shadows.soft
+  },
   heroCard: {
-    backgroundColor: colors.primarySoft
+    backgroundColor: colors.primarySoft,
+    ...shadows.soft
   },
   heroHeader: {
     gap: spacing.lg
@@ -545,6 +600,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     backgroundColor: colors.background,
     padding: spacing.md
+  },
+  doctorCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.lg
+  },
+  doctorCardCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  doctorCardTitle: {
+    color: colors.text,
+    fontSize: typography.subtitle,
+    fontWeight: "900"
   },
   privateNotice: {
     gap: spacing.sm,

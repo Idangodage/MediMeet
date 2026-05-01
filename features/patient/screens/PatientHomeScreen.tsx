@@ -6,7 +6,7 @@ import { Screen } from "@/components/Screen";
 import { Avatar, Button, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 import { useAuth } from "@/features/auth";
 import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import {
@@ -158,7 +158,7 @@ export function PatientHomeScreen() {
         <BottomNavItem icon="user" label="Profile" onPress={() => router.push(ROUTES.patientProfile)} />
       </View>
 
-      <Button title="Sign out" variant="ghost" onPress={signOut} />
+      <Button title="Sign out" variant="ghost" onPress={signOut} style={styles.signOutButton} />
     </Screen>
   );
 }
@@ -241,9 +241,15 @@ function UpcomingAppointmentCard({
               {appointment.location?.name ?? appointment.location?.city ?? "Clinic"}
             </Text>
           </View>
+          <View style={styles.upcomingGhostMark}>
+            <PatientGlyph name="heart" color="#D7F5F5" size={54} />
+          </View>
         </View>
         <View style={styles.upcomingFooter}>
-          <Text style={styles.statusText}>{formatAppointmentStatus(appointment.status)}</Text>
+          <View style={styles.statusBadge}>
+            <View style={styles.statusBadgeDot} />
+            <Text style={styles.statusText}>{formatAppointmentStatus(appointment.status)}</Text>
+          </View>
           <Pressable
             accessibilityRole="button"
             onPress={() =>
@@ -344,7 +350,7 @@ function trimSeconds(value: string): string {
 const styles = StyleSheet.create({
   content: {
     gap: spacing.lg,
-    paddingBottom: spacing.xl
+    paddingBottom: spacing["3xl"]
   },
   topRow: {
     flexDirection: "row",
@@ -360,7 +366,8 @@ const styles = StyleSheet.create({
     borderColor: "#E1ECF8",
     alignItems: "center",
     justifyContent: "center",
-    position: "relative"
+    position: "relative",
+    ...shadows.soft
   },
   bellDot: {
     position: "absolute",
@@ -372,7 +379,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary
   },
   heroText: {
-    gap: spacing.sm
+    gap: spacing.sm,
+    paddingTop: spacing.sm
   },
   greeting: {
     color: colors.text,
@@ -387,15 +395,16 @@ const styles = StyleSheet.create({
     ...fontStyles.regular
   },
   searchBar: {
-    minHeight: 68,
-    borderRadius: 22,
+    minHeight: 70,
+    borderRadius: 24,
     borderWidth: 1,
-    borderColor: "#D7E4FA",
+    borderColor: "#DDEAF4",
     backgroundColor: colors.surface,
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    paddingHorizontal: spacing.lg
+    paddingHorizontal: spacing.lg,
+    ...shadows.soft
   },
   searchPlaceholder: {
     flex: 1,
@@ -411,14 +420,15 @@ const styles = StyleSheet.create({
   },
   upcomingCard: {
     flexDirection: "row",
-    borderRadius: 28,
+    borderRadius: 30,
     borderWidth: 1,
     borderColor: "#BEEDEE",
     backgroundColor: colors.surface,
-    overflow: "hidden"
+    overflow: "hidden",
+    ...shadows.card
   },
   upcomingSide: {
-    width: 136,
+    width: 146,
     backgroundColor: colors.primary,
     padding: spacing.lg,
     alignItems: "center",
@@ -439,7 +449,8 @@ const styles = StyleSheet.create({
   },
   upcomingHeader: {
     flexDirection: "row",
-    gap: spacing.md
+    gap: spacing.md,
+    alignItems: "flex-start"
   },
   upcomingIdentity: {
     flex: 1,
@@ -457,6 +468,14 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     ...fontStyles.regular
   },
+  upcomingGhostMark: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#F8FEFF"
+  },
   upcomingFooter: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -465,9 +484,24 @@ const styles = StyleSheet.create({
     borderTopColor: "#E3EEF9",
     paddingTop: spacing.md
   },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderRadius: radius.full,
+    backgroundColor: "#EAF8FA",
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm
+  },
+  statusBadgeDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary
+  },
   statusText: {
     color: colors.primary,
-    fontSize: 16,
+    fontSize: 15,
     ...fontStyles.bold
   },
   detailsLink: {
@@ -482,12 +516,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: 22,
     ...fontStyles.extraBold
   },
   sectionAction: {
     color: colors.primary,
-    fontSize: 18,
+    fontSize: 17,
     ...fontStyles.medium
   },
   quickActionsRow: {
@@ -496,7 +530,7 @@ const styles = StyleSheet.create({
   },
   quickCard: {
     flex: 1,
-    minHeight: 150,
+    minHeight: 154,
     borderRadius: 24,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -504,7 +538,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.md,
-    padding: spacing.md
+    padding: spacing.md,
+    ...shadows.soft
   },
   quickIconCircle: {
     width: 62,
@@ -537,7 +572,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     padding: spacing.lg,
-    gap: spacing.md
+    gap: spacing.md,
+    ...shadows.soft
   },
   recommendedHeader: {
     gap: spacing.md
@@ -583,16 +619,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.lg,
     borderRadius: 28,
-    backgroundColor: "#EFF8F9",
+    backgroundColor: "#F2FBFC",
     borderWidth: 1,
     borderColor: "#BEEDEE",
-    padding: spacing.lg
+    padding: spacing.lg,
+    ...shadows.soft
   },
   tipIllustration: {
     width: 110,
     height: 110,
     borderRadius: 28,
-    backgroundColor: colors.surface,
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -624,7 +661,9 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: "#E3EEF9"
+    borderColor: "#E3EEF9",
+    paddingHorizontal: spacing.sm,
+    ...shadows.card
   },
   bottomNavItem: {
     alignItems: "center",
@@ -646,5 +685,8 @@ const styles = StyleSheet.create({
   },
   bottomNavLabelActive: {
     color: colors.primary
+  },
+  signOutButton: {
+    alignSelf: "center"
   }
 });

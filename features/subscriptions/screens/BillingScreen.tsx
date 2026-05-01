@@ -1,14 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as ExpoLinking from "expo-linking";
-import { Alert, Linking, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 
 import { Screen } from "@/components/Screen";
 import { Badge, Button, Card, EmptyState, ErrorState, LoadingState } from "@/components/ui";
+import { ROUTES } from "@/constants/routes";
 import {
   SUBSCRIPTION_PLANS,
   type SubscriptionPlanId
 } from "@/constants/subscriptions";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
   createStripeCheckoutSessionUrl,
   createStripePortalSessionUrl,
@@ -60,15 +64,25 @@ export function BillingScreen({ scope }: BillingScreenProps) {
   });
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.topRow}>
+        <PublicBrandLockup />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push("/notifications")}
+          style={styles.bellButton}
+        >
+          <PatientGlyph name="bell" color="#0F2C66" />
+          <View style={styles.bellDot} />
+        </Pressable>
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>
-          {scope === "doctor" ? "Doctor billing" : "Clinic billing"}
-        </Text>
-        <Text style={styles.title}>Subscription management</Text>
+        <Text style={styles.title}>Subscription</Text>
         <Text style={styles.subtitle}>
-          Stripe Checkout and the customer portal handle payment collection and
-          card updates. MediMeet stores subscription state and invoice history only.
+          {scope === "clinic"
+            ? "Manage your clinic plan and billing."
+            : "Manage your plan and billing."}
         </Text>
       </View>
 
@@ -114,9 +128,61 @@ export function BillingScreen({ scope }: BillingScreenProps) {
               });
             }}
           />
+
+          {scope === "clinic" ? (
+            <View style={styles.bottomNav}>
+              <BottomNavItem
+                icon="home"
+                label="Dashboard"
+                onPress={() => router.push(ROUTES.clinicHome)}
+              />
+              <BottomNavItem
+                icon="user"
+                label="Doctors"
+                onPress={() => router.push(ROUTES.clinicDoctors)}
+              />
+              <BottomNavItem
+                icon="location"
+                label="Locations"
+                onPress={() => router.push(ROUTES.clinicProfile)}
+              />
+              <BottomNavItem
+                icon="calendar"
+                label="Appointments"
+                onPress={() => router.push(ROUTES.clinicAppointments)}
+              />
+              <BottomNavItem
+                active
+                icon="shield"
+                label="Profile"
+                onPress={() => router.push(ROUTES.clinicProfile)}
+              />
+            </View>
+          ) : null}
         </>
       ) : null}
     </Screen>
+  );
+}
+
+function BottomNavItem({
+  active = false,
+  icon,
+  label,
+  onPress
+}: {
+  active?: boolean;
+  icon: "home" | "user" | "location" | "calendar" | "shield";
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.bottomNavItem}>
+      <PatientGlyph color={active ? colors.primary : "#6B7FA8"} name={icon} size={26} />
+      <Text style={[styles.bottomNavLabel, active ? styles.bottomNavLabelActive : null]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -307,29 +373,49 @@ function getInvoiceVariant(status: BillingInvoice["status"]) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: spacing.sm,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.primaryTint,
-    padding: spacing.xl
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
   },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: "900",
-    textTransform: "uppercase"
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  bellButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E1ECF8",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    ...shadows.soft
+  },
+  bellDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary
+  },
+  header: {
+    gap: spacing.sm
   },
   title: {
     color: colors.text,
-    fontSize: typography.title,
+    fontSize: 34,
     fontWeight: "900",
-    letterSpacing: -0.5
+    letterSpacing: -0.5,
+    lineHeight: 40
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: typography.body,
+    fontSize: 18,
     lineHeight: 24
   },
   bodyText: {
@@ -404,5 +490,29 @@ const styles = StyleSheet.create({
   invoiceActions: {
     alignItems: "flex-end",
     gap: spacing.sm
+  },
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    minHeight: 92,
+    borderRadius: 30,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    paddingHorizontal: spacing.sm,
+    ...shadows.card
+  },
+  bottomNavItem: {
+    alignItems: "center",
+    gap: spacing.sm
+  },
+  bottomNavLabel: {
+    color: "#6B7FA8",
+    fontSize: 14,
+    fontWeight: "500"
+  },
+  bottomNavLabelActive: {
+    color: colors.primary
   }
 });

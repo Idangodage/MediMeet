@@ -10,7 +10,7 @@ import { Screen } from "@/components/Screen";
 import { Avatar, EmptyState, ErrorState, LoadingState } from "@/components/ui";
 import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
 import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
 import {
@@ -328,7 +328,8 @@ const styles = StyleSheet.create({
     borderColor: "#D6E8FF",
     backgroundColor: colors.surface,
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    ...shadows.soft
   },
   searchBar: {
     minHeight: 76,
@@ -339,7 +340,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.md,
-    paddingHorizontal: spacing.lg
+    paddingHorizontal: spacing.lg,
+    ...shadows.soft
   },
   searchInput: {
     flex: 1,
@@ -363,7 +365,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: spacing.sm,
-    paddingHorizontal: spacing.md
+    paddingHorizontal: spacing.md,
+    ...shadows.soft
   },
   filterChipInput: {
     flex: 1,
@@ -393,7 +396,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     padding: spacing.xl,
-    gap: spacing.lg
+    gap: spacing.lg,
+    ...shadows.card
   },
   doctorTopRow: {
     gap: spacing.md
@@ -447,7 +451,9 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: "#F2FBFC",
     padding: spacing.md,
-    gap: spacing.xs
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: "#D7EEF2"
   },
   metricLabel: {
     color: "#6C80AA",

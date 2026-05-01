@@ -1,8 +1,9 @@
+import { router } from "expo-router";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import {
@@ -15,7 +16,10 @@ import {
   Input,
   LoadingState
 } from "@/components/ui";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { ROUTES } from "@/constants/routes";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
   clinicDoctorInviteSchema,
   type ClinicDoctorInviteFormValues
@@ -32,19 +36,45 @@ const clinicWorkspaceQueryKey = ["clinic-workspace"];
 
 export function ClinicDoctorsScreen() {
   const queryClient = useQueryClient();
+  const [activeStatus, setActiveStatus] = useState<"all" | "verified" | "pending" | "active">("all");
   const workspaceQuery = useQuery({
     queryKey: clinicWorkspaceQueryKey,
     queryFn: getClinicWorkspace
   });
+  const filteredDoctors = (workspaceQuery.data?.doctors ?? []).filter((doctor) => {
+    if (activeStatus === "all") {
+      return true;
+    }
+
+    if (activeStatus === "verified") {
+      return doctor.verificationStatus === "approved";
+    }
+
+    if (activeStatus === "pending") {
+      return doctor.status === "pending";
+    }
+
+    return doctor.status === "active";
+  });
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.topRow}>
+        <PublicBrandLockup />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(ROUTES.notifications)}
+          style={styles.bellButton}
+        >
+          <PatientGlyph name="bell" color="#0F2C66" />
+          <View style={styles.bellDot} />
+        </Pressable>
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>Clinic doctors</Text>
-        <Text style={styles.title}>Manage connected doctors</Text>
+        <Text style={styles.title}>Doctors</Text>
         <Text style={styles.subtitle}>
-          Doctors can belong to multiple clinics. This screen only manages
-          memberships for the clinic linked to your admin account.
+          Manage your clinic doctors and availability.
         </Text>
       </View>
 
@@ -75,23 +105,78 @@ export function ClinicDoctorsScreen() {
           ) : null}
 
           {workspaceQuery.data.clinic ? (
-            <InviteDoctorCard
-              disabled={
-                workspaceQuery.data.doctors.filter((doctor) =>
-                  ["active", "pending"].includes(doctor.status)
-                ).length >= 1 && !workspaceQuery.data.canUseFullClinicDashboard
-              }
-              onRefresh={async () => {
-                await queryClient.invalidateQueries({
-                  queryKey: clinicWorkspaceQueryKey
-                });
-              }}
-            />
+            <>
+              <View style={styles.toolbarCard}>
+                <View style={styles.clinicHeaderRow}>
+                  <View style={styles.clinicNamePill}>
+                    <PatientGlyph name="location" color={colors.primary} size={20} />
+                    <Text style={styles.clinicNameText}>
+                      {workspaceQuery.data.clinic.name}
+                    </Text>
+                  </View>
+                  <View style={styles.countPill}>
+                    <Text style={styles.countPillText}>
+                      {workspaceQuery.data.doctors.length} doctors
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.searchInviteRow}>
+                  <View style={styles.searchBar}>
+                    <PatientGlyph name="search" color="#7B8F99" />
+                    <Text style={styles.searchPlaceholder}>
+                      Search doctors by name or specialty...
+                    </Text>
+                  </View>
+                  <Button
+                    title="+ Add Doctor"
+                    onPress={() =>
+                      Alert.alert(
+                        "Invite a doctor",
+                        "Use the invite doctor form below to add a doctor to your clinic."
+                      )
+                    }
+                    style={styles.addDoctorButton}
+                  />
+                </View>
+
+                <View style={styles.filterChips}>
+                  {[
+                    { key: "all", label: "All" },
+                    { key: "verified", label: "Verified" },
+                    { key: "pending", label: "Pending" },
+                    { key: "active", label: "Active" }
+                  ].map((item) => (
+                    <Button
+                      key={item.key}
+                      title={item.label}
+                      variant={activeStatus === item.key ? "primary" : "secondary"}
+                      onPress={() =>
+                        setActiveStatus(item.key as "all" | "verified" | "pending" | "active")
+                      }
+                    />
+                  ))}
+                </View>
+              </View>
+
+              <InviteDoctorCard
+                disabled={
+                  workspaceQuery.data.doctors.filter((doctor) =>
+                    ["active", "pending"].includes(doctor.status)
+                  ).length >= 1 && !workspaceQuery.data.canUseFullClinicDashboard
+                }
+                onRefresh={async () => {
+                  await queryClient.invalidateQueries({
+                    queryKey: clinicWorkspaceQueryKey
+                  });
+                }}
+              />
+            </>
           ) : null}
 
-          {workspaceQuery.data.doctors.length > 0 ? (
+          {filteredDoctors.length > 0 ? (
             <View style={styles.list}>
-              {workspaceQuery.data.doctors.map((doctor) => (
+              {filteredDoctors.map((doctor) => (
                 <DoctorMembershipCard
                   key={doctor.id}
                   doctor={doctor}
@@ -113,7 +198,57 @@ export function ClinicDoctorsScreen() {
           )}
         </>
       ) : null}
+
+      <View style={styles.bottomNav}>
+        <BottomNavItem
+          icon="home"
+          label="Dashboard"
+          onPress={() => router.push(ROUTES.clinicHome)}
+        />
+        <BottomNavItem
+          active
+          icon="user"
+          label="Doctors"
+          onPress={() => router.push(ROUTES.clinicDoctors)}
+        />
+        <BottomNavItem
+          icon="location"
+          label="Locations"
+          onPress={() => router.push(ROUTES.clinicProfile)}
+        />
+        <BottomNavItem
+          icon="calendar"
+          label="Appointments"
+          onPress={() => router.push(ROUTES.clinicAppointments)}
+        />
+        <BottomNavItem
+          icon="shield"
+          label="Profile"
+          onPress={() => router.push(ROUTES.clinicProfile)}
+        />
+      </View>
     </Screen>
+  );
+}
+
+function BottomNavItem({
+  active = false,
+  icon,
+  label,
+  onPress
+}: {
+  active?: boolean;
+  icon: "home" | "user" | "location" | "calendar" | "shield";
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.bottomNavItem}>
+      <PatientGlyph color={active ? colors.primary : "#6B7FA8"} name={icon} size={26} />
+      <Text style={[styles.bottomNavLabel, active ? styles.bottomNavLabelActive : null]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -241,7 +376,7 @@ function DoctorMembershipCard({
             {doctor.specialties.join(", ") || "Specialty unavailable"}
           </Text>
           <Text style={styles.metaText}>
-            Reg. {doctor.registrationNumber} · {doctor.yearsOfExperience} years
+            Reg. {doctor.registrationNumber} | {doctor.yearsOfExperience} years
           </Text>
         </View>
         <Badge label={formatStatus(doctor.status)} variant={getStatusVariant(doctor.status)} />
@@ -295,24 +430,124 @@ function getStatusVariant(status: MembershipStatus) {
 }
 
 const styles = StyleSheet.create({
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
+  },
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  bellButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E1ECF8",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    ...shadows.soft
+  },
+  bellDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary
+  },
   header: {
     gap: spacing.sm
   },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: "900",
-    textTransform: "uppercase"
-  },
   title: {
     color: colors.text,
-    fontSize: typography.title,
-    fontWeight: "900"
+    fontSize: 34,
+    fontWeight: "900",
+    lineHeight: 40
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: typography.body,
+    fontSize: 18,
     lineHeight: 24
+  },
+  toolbarCard: {
+    gap: spacing.md,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    ...shadows.card
+  },
+  clinicHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: spacing.md
+  },
+  clinicNamePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.sm,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md
+  },
+  clinicNameText: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "600"
+  },
+  countPill: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: "#F9FBFF",
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md
+  },
+  countPillText: {
+    color: colors.textMuted,
+    fontSize: 16,
+    fontWeight: "600"
+  },
+  searchInviteRow: {
+    flexDirection: "row",
+    gap: spacing.md,
+    alignItems: "center"
+  },
+  searchBar: {
+    flex: 1,
+    minHeight: 64,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#DDEAF4",
+    backgroundColor: colors.surface,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg
+  },
+  searchPlaceholder: {
+    color: "#7B8F99",
+    fontSize: 17,
+    fontWeight: "500"
+  },
+  addDoctorButton: {
+    minWidth: 150,
+    minHeight: 64
+  },
+  filterChips: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    flexWrap: "wrap"
   },
   list: {
     gap: spacing.lg
@@ -349,5 +584,29 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     gap: spacing.sm
+  },
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    minHeight: 92,
+    borderRadius: 30,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    paddingHorizontal: spacing.sm,
+    ...shadows.card
+  },
+  bottomNavItem: {
+    alignItems: "center",
+    gap: spacing.sm
+  },
+  bottomNavLabel: {
+    color: "#6B7FA8",
+    fontSize: 14,
+    fontWeight: "500"
+  },
+  bottomNavLabelActive: {
+    color: colors.primary
   }
 });

@@ -9,7 +9,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
-import { Alert, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import {
@@ -22,7 +22,10 @@ import {
   LoadingState
 } from "@/components/ui";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
+import { useAuth } from "@/features/auth";
+import { PatientGlyph } from "@/features/patient/components/PatientGlyph";
+import { PublicBrandLockup } from "@/features/public/components/PublicBrandLockup";
 import {
   availabilitySchema,
   type AvailabilityFormValues
@@ -49,6 +52,7 @@ const viewModes: CalendarViewMode[] = ["day", "week", "month"];
 const consultationTypes: ConsultationType[] = ["in_person", "video", "phone"];
 
 export function DoctorAvailabilityScreen() {
+  const { profile, user } = useAuth();
   const queryClient = useQueryClient();
   const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
   const [anchorDate, setAnchorDate] = useState(getTodayIsoDate());
@@ -95,14 +99,44 @@ export function DoctorAvailabilityScreen() {
   );
 
   return (
-    <Screen>
+    <Screen contentStyle={styles.content}>
+      <View style={styles.topRow}>
+        <PublicBrandLockup />
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => router.push(ROUTES.notifications)}
+          style={styles.bellButton}
+        >
+          <PatientGlyph name="bell" color="#0F2C66" />
+          <View style={styles.bellDot} />
+        </Pressable>
+      </View>
+
       <View style={styles.header}>
-        <Text style={styles.eyebrow}>Availability calendar</Text>
-        <Text style={styles.title}>Manage appointment slots</Text>
+        <Text style={styles.title}>Availability</Text>
         <Text style={styles.subtitle}>
-          Create future availability, generate slots automatically, block specific
-          slots, and keep booked appointments protected.
+          Manage your available slots and schedule.
         </Text>
+      </View>
+
+      <View style={styles.doctorCard}>
+        <View style={styles.doctorIdentity}>
+          <View style={styles.doctorAvatarCircle}>
+            <PatientGlyph name="user" color={colors.primary} size={28} />
+          </View>
+          <View style={styles.doctorCopy}>
+            <Text style={styles.doctorName}>
+              {profile?.fullName ?? user?.email?.split("@")[0] ?? "Doctor"}
+            </Text>
+            <Text style={styles.doctorMeta}>Availability workspace</Text>
+          </View>
+        </View>
+        <View style={styles.doctorLocationBox}>
+          <Text style={styles.doctorLocationLabel}>
+            {calendarQuery.data?.locations[0]?.name ?? "Select location"}
+          </Text>
+          <Text style={styles.doctorLocationLink}>Switch clinic</Text>
+        </View>
       </View>
 
       <Card>
@@ -220,8 +254,58 @@ export function DoctorAvailabilityScreen() {
         </>
       ) : null}
 
+      <View style={styles.bottomNav}>
+        <DoctorBottomNavItem
+          icon="home"
+          label="Dashboard"
+          onPress={() => router.push(ROUTES.doctorHome)}
+        />
+        <DoctorBottomNavItem
+          active
+          icon="calendar"
+          label="Availability"
+          onPress={() => router.push(ROUTES.doctorAvailability)}
+        />
+        <DoctorBottomNavItem
+          icon="bookmark"
+          label="Appointments"
+          onPress={() => router.push(ROUTES.doctorAppointments)}
+        />
+        <DoctorBottomNavItem
+          icon="shield"
+          label="Subscription"
+          onPress={() => router.push(ROUTES.doctorBilling)}
+        />
+        <DoctorBottomNavItem
+          icon="user"
+          label="Profile"
+          onPress={() => router.push(ROUTES.doctorProfile)}
+        />
+      </View>
+
       <Button title="Back to dashboard" variant="ghost" onPress={() => router.push(ROUTES.doctorHome)} />
     </Screen>
+  );
+}
+
+function DoctorBottomNavItem({
+  active = false,
+  icon,
+  label,
+  onPress
+}: {
+  active?: boolean;
+  icon: "home" | "calendar" | "bookmark" | "shield" | "user";
+  label: string;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable accessibilityRole="button" onPress={onPress} style={styles.bottomNavItem}>
+      <PatientGlyph color={active ? colors.primary : "#6B7FA8"} name={icon} size={26} />
+      <Text style={[styles.bottomNavLabel, active ? styles.bottomNavLabelActive : null]}>
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -667,31 +751,106 @@ function formatStatus(value: string): string {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    gap: spacing.sm,
-    borderRadius: 30,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.primaryTint,
-    padding: spacing.xl
+  content: {
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
   },
-  eyebrow: {
-    color: colors.primary,
-    fontSize: typography.small,
-    fontWeight: "900",
-    textTransform: "uppercase"
+  topRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center"
+  },
+  bellButton: {
+    width: 52,
+    height: 52,
+    borderRadius: 20,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E1ECF8",
+    alignItems: "center",
+    justifyContent: "center",
+    position: "relative",
+    ...shadows.soft
+  },
+  bellDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary
+  },
+  header: {
+    gap: spacing.sm
   },
   title: {
     color: colors.text,
-    fontSize: typography.title,
+    fontSize: 34,
     fontWeight: "900",
     letterSpacing: -0.5,
-    lineHeight: 34
+    lineHeight: 40
   },
   subtitle: {
     color: colors.textMuted,
-    fontSize: typography.body,
+    fontSize: 18,
     lineHeight: 24
+  },
+  doctorCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: spacing.lg,
+    borderRadius: 28,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    backgroundColor: colors.surface,
+    padding: spacing.xl,
+    ...shadows.card
+  },
+  doctorIdentity: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.md,
+    flex: 1
+  },
+  doctorAvatarCircle: {
+    width: 76,
+    height: 76,
+    borderRadius: 24,
+    backgroundColor: "#F2FBFC",
+    alignItems: "center",
+    justifyContent: "center"
+  },
+  doctorCopy: {
+    flex: 1,
+    gap: spacing.xs
+  },
+  doctorName: {
+    color: colors.text,
+    fontSize: 24,
+    fontWeight: "900"
+  },
+  doctorMeta: {
+    color: colors.textMuted,
+    fontSize: typography.body
+  },
+  doctorLocationBox: {
+    alignItems: "flex-start",
+    gap: spacing.xs,
+    borderLeftWidth: 1,
+    borderLeftColor: "#E6EDF7",
+    paddingLeft: spacing.lg
+  },
+  doctorLocationLabel: {
+    color: colors.text,
+    fontSize: 17,
+    fontWeight: "700"
+  },
+  doctorLocationLink: {
+    color: colors.primary,
+    fontSize: 16,
+    fontWeight: "600"
   },
   viewModeRow: {
     flexDirection: "row",
@@ -842,5 +1001,29 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: typography.body,
     fontWeight: "900"
+  },
+  bottomNav: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    alignItems: "center",
+    minHeight: 92,
+    borderRadius: 30,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: "#E3EEF9",
+    paddingHorizontal: spacing.sm,
+    ...shadows.card
+  },
+  bottomNavItem: {
+    alignItems: "center",
+    gap: spacing.sm
+  },
+  bottomNavLabel: {
+    color: "#6B7FA8",
+    fontSize: 14,
+    fontWeight: "500"
+  },
+  bottomNavLabelActive: {
+    color: colors.primary
   }
 });

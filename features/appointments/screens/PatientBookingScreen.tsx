@@ -24,7 +24,7 @@ import {
 } from "@/components/ui";
 import { fontStyles } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { colors, radius, spacing, typography } from "@/constants/theme";
+import { colors, radius, shadows, spacing, typography } from "@/constants/theme";
 import { AuthBackButton } from "@/features/auth/components/AuthBackButton";
 import { useAuth } from "@/features/auth";
 import {
@@ -765,7 +765,8 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   content: {
-    gap: spacing.lg
+    gap: spacing.lg,
+    paddingBottom: spacing["3xl"]
   },
   headerRow: {
     flexDirection: "row",
@@ -784,7 +785,8 @@ const styles = StyleSheet.create({
   progressRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: spacing.sm
+    gap: spacing.sm,
+    paddingTop: spacing.xs
   },
   progressItem: {
     flex: 1,
@@ -841,7 +843,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.lg
+    padding: spacing.lg,
+    ...shadows.card
   },
   doctorCopy: {
     flex: 1,
@@ -882,7 +885,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E3EEF9",
     backgroundColor: colors.surface,
-    padding: spacing.lg
+    padding: spacing.lg,
+    ...shadows.soft
   },
   locationIcon: {
     width: 52,
@@ -918,7 +922,8 @@ const styles = StyleSheet.create({
     borderColor: "#CDE7EF",
     backgroundColor: "#F2FBFC",
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm
+    paddingVertical: spacing.sm,
+    ...shadows.soft
   },
   choiceChipActive: {
     borderColor: colors.primary,
@@ -960,7 +965,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: spacing.xs,
-    paddingVertical: spacing.md
+    paddingVertical: spacing.md,
+    ...shadows.soft
   },
   dateChipActive: {
     borderColor: colors.primary,
@@ -999,7 +1005,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: spacing.md
+    paddingVertical: spacing.md,
+    ...shadows.soft
   },
   timeChipActive: {
     backgroundColor: colors.primary,
@@ -1018,7 +1025,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#D7E4FA",
     backgroundColor: colors.surface,
-    padding: spacing.md
+    padding: spacing.md,
+    ...shadows.soft
   },
   reasonInput: {
     minHeight: 126,
@@ -1048,7 +1056,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2FBFC",
     borderWidth: 1,
     borderColor: "#D7EEF2",
-    padding: spacing.lg
+    padding: spacing.lg,
+    ...shadows.soft
   },
   summaryBlock: {
     flex: 1,
@@ -1084,7 +1093,8 @@ const styles = StyleSheet.create({
   },
   confirmationCard: {
     gap: spacing.lg,
-    alignItems: "center"
+    alignItems: "center",
+    ...shadows.card
   },
   confirmationMark: {
     width: 84,
