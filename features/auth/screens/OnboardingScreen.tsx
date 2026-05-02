@@ -125,6 +125,11 @@ export function OnboardingScreen() {
           </View>
           <View style={styles.patientHeroHeader}>
             <PublicBrandLockup centered />
+            <Image
+              source={require("../../../assets/branding/create-patient-account.webp")}
+              style={styles.patientHeroIllustration}
+              resizeMode="contain"
+            />
             <Text style={styles.patientHeroTitle}>Complete your profile</Text>
             <Text style={styles.patientHeroSubtitle}>
               Set up your patient account
@@ -967,6 +972,11 @@ const styles = StyleSheet.create({
   patientHeroHeader: {
     alignItems: "center",
     gap: spacing.md
+  },
+  patientHeroIllustration: {
+    width: "100%",
+    maxWidth: 320,
+    height: 220
   },
   patientHeroTitle: {
     color: colors.text,

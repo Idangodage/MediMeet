@@ -1,5 +1,5 @@
 import { Link, Redirect, router, useLocalSearchParams, type Href } from "expo-router";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/ui";
@@ -46,8 +46,11 @@ const INTRO_CONTENT: Record<IntroRole, IntroConfig> = {
 };
 
 export function RoleAccountIntroScreen() {
+  const { width } = useWindowDimensions();
   const { role: roleParam } = useLocalSearchParams<{ role?: string }>();
   const normalizedRole = normalizeRole(roleParam);
+  const isTablet = width >= 768;
+  const isCompact = width < 380;
 
   if (
     !normalizedRole ||
@@ -62,46 +65,68 @@ export function RoleAccountIntroScreen() {
 
   return (
     <Screen contentStyle={styles.content}>
-      <View style={styles.hero}>
+      <View style={[styles.hero, isTablet ? styles.heroTablet : null]}>
         <PublicBrandLockup centered />
         <View style={styles.stepPill}>
           <Text style={styles.stepPillText}>1 of 3</Text>
         </View>
-        <Text style={styles.title}>{config.title}</Text>
-        <Text style={styles.subtitle}>{config.subtitle}</Text>
+        <Text
+          style={[
+            styles.title,
+            isCompact ? styles.titleCompact : null,
+            isTablet ? styles.titleTablet : null
+          ]}
+        >
+          {config.title}
+        </Text>
+        <Text
+          style={[
+            styles.subtitle,
+            isCompact ? styles.subtitleCompact : null,
+            isTablet ? styles.subtitleTablet : null
+          ]}
+        >
+          {config.subtitle}
+        </Text>
       </View>
 
       <PublicRoleIntroArtwork role={role} />
 
-      <View style={styles.dots}>
-        {ROLE_ORDER.map((item, index) => (
-          <View
-            key={item}
-            style={[styles.dot, index === activeIndex && styles.activeDot]}
-          />
-        ))}
+      <View style={styles.footer}>
+        <View style={styles.dots}>
+          {ROLE_ORDER.map((item, index) => (
+            <View
+              key={item}
+              style={[styles.dot, index === activeIndex && styles.activeDot]}
+            />
+          ))}
+        </View>
+
+        <Button
+          title={config.actionLabel}
+          onPress={() => router.push(`${ROUTES.signUp}?role=${role}` as const)}
+        />
+
+        <Link href={ROUTES.signIn} style={styles.loginLink}>
+          Log In
+        </Link>
       </View>
-
-      <Button
-        title={config.actionLabel}
-        onPress={() => router.push(`${ROUTES.signUp}?role=${role}` as const)}
-      />
-
-      <Link href={ROUTES.signIn} style={styles.loginLink}>
-        Log In
-      </Link>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
-    gap: spacing.lg,
-    paddingBottom: spacing.xl
+    gap: spacing.md,
+    paddingBottom: spacing.lg
   },
   hero: {
     alignItems: "center",
-    gap: spacing.md
+    gap: spacing.sm
+  },
+  heroTablet: {
+    alignSelf: "center",
+    maxWidth: 720
   },
   stepPill: {
     borderRadius: radius.full,
@@ -122,13 +147,34 @@ const styles = StyleSheet.create({
     textAlign: "center",
     ...fontStyles.extraBold
   },
+  titleCompact: {
+    fontSize: 28,
+    lineHeight: 34
+  },
+  titleTablet: {
+    fontSize: 36,
+    lineHeight: 42
+  },
   subtitle: {
     maxWidth: 640,
     color: colors.textMuted,
     fontSize: 17,
-    lineHeight: 27,
+    lineHeight: 24,
     textAlign: "center",
     ...fontStyles.regular
+  },
+  subtitleCompact: {
+    fontSize: 16,
+    lineHeight: 22
+  },
+  subtitleTablet: {
+    maxWidth: 700,
+    fontSize: 18,
+    lineHeight: 26
+  },
+  footer: {
+    marginTop: "auto",
+    gap: spacing.md
   },
   dots: {
     flexDirection: "row",

@@ -1,4 +1,4 @@
-import { Image, StyleSheet, View } from "react-native";
+import { Image, StyleSheet, View, useWindowDimensions } from "react-native";
 
 type PublicRoleIllustrationProps = {
   role: "patient" | "doctor" | "clinic_admin";
@@ -11,15 +11,17 @@ const clinicImage = require("@/assets/branding/role-clinic.webp");
 export function PublicRoleIllustration({
   role
 }: PublicRoleIllustrationProps) {
+  const { width } = useWindowDimensions();
   const source =
     role === "doctor"
       ? doctorImage
       : role === "clinic_admin"
         ? clinicImage
         : patientImage;
+  const size = width >= 768 ? 156 : width < 380 ? 104 : 136;
 
   return (
-    <View style={styles.illustrationShell}>
+    <View style={[styles.illustrationShell, { width: size, height: size }]}>
       <Image source={source} resizeMode="cover" style={styles.image} />
     </View>
   );
@@ -27,8 +29,6 @@ export function PublicRoleIllustration({
 
 const styles = StyleSheet.create({
   illustrationShell: {
-    width: 136,
-    height: 136,
     borderRadius: 28,
     overflow: "hidden",
     backgroundColor: "#EDF6FF"

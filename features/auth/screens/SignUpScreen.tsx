@@ -239,11 +239,6 @@ export function SignUpScreen() {
         <Button
           title="Create Account"
           isLoading={isSubmitting}
-          leftIcon={
-            <View style={styles.buttonIconCircle}>
-              <Text style={styles.buttonIconArrow}>{">"}</Text>
-            </View>
-          }
           onPress={onSubmit}
           style={styles.primaryButton}
         />
@@ -381,20 +376,6 @@ const styles = StyleSheet.create({
   },
   primaryButton: {
     minHeight: 78
-  },
-  buttonIconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.white,
-    alignItems: "center",
-    justifyContent: "center"
-  },
-  buttonIconArrow: {
-    color: colors.primary,
-    fontSize: 26,
-    lineHeight: 26,
-    ...fontStyles.bold
   },
   footerText: {
     color: colors.textMuted,

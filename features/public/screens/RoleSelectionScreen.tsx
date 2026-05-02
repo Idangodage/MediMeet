@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, router } from "expo-router";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from "react-native";
 
 import { Screen } from "@/components/Screen";
 import { Button } from "@/components/ui";
@@ -39,7 +39,10 @@ const roles: Array<{
 ];
 
 export function PublicRoleSelectionScreen() {
+  const { width } = useWindowDimensions();
   const [selectedRole, setSelectedRole] = useState<SelectableRole>("patient");
+  const isTablet = width >= 768;
+  const isCompact = width < 380;
 
   const handleContinue = () => {
     router.push(`/role-intro/${selectedRole}` as const);
@@ -60,15 +63,23 @@ export function PublicRoleSelectionScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.hero}>
+      <View style={[styles.hero, isTablet ? styles.heroTablet : null]}>
         <PublicBrandLockup centered />
-        <Text style={styles.title}>Choose your role</Text>
-        <Text style={styles.subtitle}>
+        <Text
+          style={[
+            styles.title,
+            isCompact ? styles.titleCompact : null,
+            isTablet ? styles.titleTablet : null
+          ]}
+        >
+          Choose your role
+        </Text>
+        <Text style={[styles.subtitle, isTablet ? styles.subtitleTablet : null]}>
           Select how you want to use MediMeet
         </Text>
       </View>
 
-      <View style={styles.roleList}>
+      <View style={[styles.roleList, isTablet ? styles.roleListTablet : null]}>
         {roles.map((item) => {
           const isSelected = selectedRole === item.role;
 
@@ -79,6 +90,8 @@ export function PublicRoleSelectionScreen() {
               onPress={() => setSelectedRole(item.role)}
               style={({ pressed }) => [
                 styles.roleCard,
+                isCompact ? styles.roleCardCompact : null,
+                isTablet ? styles.roleCardTablet : null,
                 isSelected ? styles.roleCardSelected : null,
                 pressed ? styles.roleCardPressed : null
               ]}
@@ -93,12 +106,14 @@ export function PublicRoleSelectionScreen() {
               <View style={styles.roleAside}>
                 {isSelected ? (
                   <View style={styles.checkBadge}>
-                    <Text style={styles.checkBadgeText}>v</Text>
+                    <View style={styles.checkMarkWrap}>
+                      <View style={styles.checkMarkShort} />
+                      <View style={styles.checkMarkLong} />
+                    </View>
                   </View>
                 ) : (
                   <View style={styles.checkBadgeSpacer} />
                 )}
-                <Text style={styles.chevron}>{">"}</Text>
               </View>
             </Pressable>
           );
@@ -148,6 +163,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: spacing.md
   },
+  heroTablet: {
+    alignSelf: "center",
+    maxWidth: 760
+  },
   title: {
     color: colors.text,
     fontSize: 34,
@@ -156,6 +175,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     ...fontStyles.extraBold
   },
+  titleCompact: {
+    fontSize: 30,
+    lineHeight: 36
+  },
+  titleTablet: {
+    fontSize: 38,
+    lineHeight: 44
+  },
   subtitle: {
     color: colors.textMuted,
     fontSize: 17,
@@ -163,8 +190,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     ...fontStyles.regular
   },
+  subtitleTablet: {
+    fontSize: 18,
+    lineHeight: 26
+  },
   roleList: {
     gap: spacing.lg
+  },
+  roleListTablet: {
+    alignSelf: "center",
+    width: "100%",
+    maxWidth: 860
   },
   roleCard: {
     flexDirection: "row",
@@ -175,6 +211,14 @@ const styles = StyleSheet.create({
     borderColor: "#E4ECF8",
     backgroundColor: colors.surface,
     padding: spacing.lg
+  },
+  roleCardCompact: {
+    gap: spacing.md,
+    padding: spacing.md
+  },
+  roleCardTablet: {
+    minHeight: 180,
+    paddingHorizontal: spacing.xl
   },
   roleCardSelected: {
     borderColor: colors.primary,
@@ -205,7 +249,7 @@ const styles = StyleSheet.create({
   },
   roleAside: {
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "flex-start",
     alignSelf: "stretch",
     paddingVertical: spacing.xs
   },
@@ -217,21 +261,34 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     backgroundColor: colors.primary
   },
-  checkBadgeText: {
-    color: colors.white,
-    fontSize: 26,
-    lineHeight: 26,
-    ...fontStyles.bold
+  checkMarkWrap: {
+    width: 20,
+    height: 16,
+    position: "relative"
+  },
+  checkMarkShort: {
+    position: "absolute",
+    left: 1,
+    bottom: 3,
+    width: 8,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.white,
+    transform: [{ rotate: "45deg" }]
+  },
+  checkMarkLong: {
+    position: "absolute",
+    left: 6,
+    bottom: 5,
+    width: 14,
+    height: 3,
+    borderRadius: 2,
+    backgroundColor: colors.white,
+    transform: [{ rotate: "-45deg" }]
   },
   checkBadgeSpacer: {
     width: 48,
     height: 48
-  },
-  chevron: {
-    color: "#2D8DE0",
-    fontSize: 36,
-    lineHeight: 36,
-    ...fontStyles.medium
   },
   footerText: {
     color: colors.textMuted,
